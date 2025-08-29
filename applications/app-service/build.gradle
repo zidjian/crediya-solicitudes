@@ -1,0 +1,36 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+	implementation project(':shared')
+	implementation project(':r2dbc-mysql')
+	implementation project(':http-client')
+	implementation project(':reactive-web')
+    implementation project(':model')
+    implementation project(':usecase')
+    implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.liquibase:liquibase-core'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.96.Final:osx-aarch_64'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+    testImplementation 'com.tngtech.archunit:archunit:1.4.1'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0'
+
+
+}
+
+tasks.register('explodedJar', Copy) {
+    with jar
+    into layout.buildDirectory.dir("exploded")
+}
+
+jar {
+    // To disable the *-plain.jar
+    enabled = false
+}
+
+bootJar {
+    // Sets output jar name
+    archiveFileName = "${project.getParent().getName()}.${archiveExtension.get()}"
+}
