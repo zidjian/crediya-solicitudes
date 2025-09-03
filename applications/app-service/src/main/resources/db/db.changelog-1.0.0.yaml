@@ -1,319 +1,176 @@
 databaseChangeLog:
-  - changeSet:
-      id: Creacion de la tabla estado
-      author: Waldir Maidana
-      changes:
-        - createTable:
-            tableName: estado
-            tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            columns:
-              - column:
-                  name: id_estado
-                  type: BIGINT
-                  autoIncrement: true
-                  constraints:
-                    primaryKey: true
-                    primaryKeyName: pk_estado
-                    nullable: false
-              - column:
-                  name: nombre
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: descripcion
-                  type: VARCHAR(255)
-                  constraints:
-                    nullable: false
-        - addUniqueConstraint:
-            tableName: estado
-            columnNames: nombre
-            constraintName: uq_estado_nombre
+    -   changeSet:
+            id: Creacion de la tabla estado
+            author: Waldir Maidana
+            changes:
+                -   createTable:
+                        tableName: estado
+                        tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                        columns:
+                            -   column:
+                                    name: id_estado
+                                    type: BIGINT
+                                    autoIncrement: true
+                                    constraints:
+                                        primaryKey: true
+                                        primaryKeyName: pk_estado
+                                        nullable: false
+                            -   column:
+                                    name: nombre
+                                    type: VARCHAR(100)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: descripcion
+                                    type: VARCHAR(255)
+                                    constraints:
+                                        nullable: false
+                -   addUniqueConstraint:
+                        tableName: estado
+                        columnNames: nombre
+                        constraintName: uq_estado_nombre
 
-  - changeSet:
-      id: Creacion de la tabla tipo_prestamo
-      author: Waldir Maidana
-      changes:
-        - createTable:
-            tableName: tipo_prestamo
-            tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            columns:
-              - column:
-                  name: id_tipo_prestamo
-                  type: BIGINT
-                  autoIncrement: true
-                  constraints:
-                    primaryKey: true
-                    primaryKeyName: pk_tipo_prestamo
-                    nullable: false
-              - column:
-                  name: nombre
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: monto_minimo
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: monto_maximo
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: tasa_interes
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: validacion_automatica
-                  type: BOOLEAN
-                  constraints:
-                    nullable: false
+    -   changeSet:
+            id: Creacion de la tabla tipo_prestamo
+            author: Waldir Maidana
+            changes:
+                -   createTable:
+                        tableName: tipo_prestamo
+                        tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                        columns:
+                            -   column:
+                                    name: id_tipo_prestamo
+                                    type: BIGINT
+                                    autoIncrement: true
+                                    constraints:
+                                        primaryKey: true
+                                        primaryKeyName: pk_tipo_prestamo
+                                        nullable: false
+                            -   column:
+                                    name: nombre
+                                    type: VARCHAR(100)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: monto_minimo
+                                    type: DECIMAL(15,2)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: monto_maximo
+                                    type: DECIMAL(15,2)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: tasa_interes
+                                    type: DECIMAL(15,2)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: validacion_automatica
+                                    type: BOOLEAN
+                                    constraints:
+                                        nullable: false
 
-  - changeSet:
-      id: Creacion de la tabla solicitud
-      author: Waldir Maidana
-      changes:
-        - createTable:
-            tableName: solicitud
-            tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-            columns:
-              - column:
-                  name: id_solicitud
-                  type: BIGINT
-                  autoIncrement: true
-                  constraints:
-                    primaryKey: true
-                    primaryKeyName: pk_solicitud
-                    nullable: false
-              - column:
-                  name: monto
-                  type: DECIMAL(15,2)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: plazo
-                  type: DATE
-                  constraints:
-                    nullable: false
-              - column:
-                  name: email
-                  type: VARCHAR(150)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: documento_identidad
-                  type: VARCHAR(50)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: id_estado
-                  type: BIGINT
-                  constraints:
-                    nullable: false
-              - column:
-                  name: id_tipo_prestamo
-                  type: BIGINT
-                  constraints:
-                    nullable: false
-              - column:
-                  name: fecha_creacion
-                  type: TIMESTAMP
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-              - column:
-                  name: fecha_actualizacion
-                  type: TIMESTAMP
-                  defaultValueComputed: CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
+    -   changeSet:
+            id: Creacion de la tabla solicitud
+            author: Waldir Maidana
+            changes:
+                -   createTable:
+                        tableName: solicitud
+                        tableOptions: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                        columns:
+                            -   column:
+                                    name: id_solicitud
+                                    type: BIGINT
+                                    autoIncrement: true
+                                    constraints:
+                                        primaryKey: true
+                                        primaryKeyName: pk_solicitud
+                                        nullable: false
+                            -   column:
+                                    name: monto
+                                    type: DECIMAL(15,2)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: plazo
+                                    type: DATE
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: email
+                                    type: VARCHAR(150)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: documento_identidad
+                                    type: VARCHAR(50)
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: id_estado
+                                    type: BIGINT
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: id_tipo_prestamo
+                                    type: BIGINT
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: fecha_creacion
+                                    type: TIMESTAMP
+                                    defaultValueComputed: CURRENT_TIMESTAMP
+                                    constraints:
+                                        nullable: false
+                            -   column:
+                                    name: fecha_actualizacion
+                                    type: TIMESTAMP
+                                    defaultValueComputed: CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                                    constraints:
+                                        nullable: false
 
-  - changeSet:
-      id: Agregar claves foraneas a solicitud
-      author: Waldir Maidana
-      changes:
-        - addForeignKeyConstraint:
-            baseTableName: solicitud
-            baseColumnNames: id_estado
-            referencedTableName: estado
-            referencedColumnNames: id_estado
-            constraintName: fk_solicitud_estado
-            onDelete: RESTRICT
-            onUpdate: CASCADE
-        - addForeignKeyConstraint:
-            baseTableName: solicitud
-            baseColumnNames: id_tipo_prestamo
-            referencedTableName: tipo_prestamo
-            referencedColumnNames: id_tipo_prestamo
-            constraintName: fk_solicitud_tipo_prestamo
-            onDelete: RESTRICT
-            onUpdate: CASCADE
+    -   changeSet:
+            id: Agregar claves foraneas a solicitud
+            author: Waldir Maidana
+            changes:
+                -   addForeignKeyConstraint:
+                        baseTableName: solicitud
+                        baseColumnNames: id_estado
+                        referencedTableName: estado
+                        referencedColumnNames: id_estado
+                        constraintName: fk_solicitud_estado
+                        onDelete: RESTRICT
+                        onUpdate: CASCADE
+                -   addForeignKeyConstraint:
+                        baseTableName: solicitud
+                        baseColumnNames: id_tipo_prestamo
+                        referencedTableName: tipo_prestamo
+                        referencedColumnNames: id_tipo_prestamo
+                        constraintName: fk_solicitud_tipo_prestamo
+                        onDelete: RESTRICT
+                        onUpdate: CASCADE
 
-  - changeSet:
-      id: Agregar indices para mejorar rendimiento
-      author: Waldir Maidana
-      changes:
-        - createIndex:
-            tableName: solicitud
-            indexName: idx_solicitud_email
-            columns:
-              - column:
-                  name: email
-        - createIndex:
-            tableName: solicitud
-            indexName: idx_solicitud_documento
-            columns:
-              - column:
-                  name: documento_identidad
-        - createIndex:
-            tableName: solicitud
-            indexName: idx_solicitud_fecha_creacion
-            columns:
-              - column:
-                  name: fecha_creacion
-  - changeSet:
-      id: Insertar datos semilla en estado
-      author: Waldir Maidana
-      changes:
-        - insert:
-            tableName: estado
-            columns:
-              - column:
-                  name: nombre
-                  value: Pendiente de revision
-              - column:
-                  name: descripcion
-                  value: Solicitud pendiente de revisión
-        - insert:
-            tableName: estado
-            columns:
-              - column:
-                  name: nombre
-                  value: Aprobada
-              - column:
-                  name: descripcion
-                  value: Solicitud aprobada y lista para desembolso
-        - insert:
-            tableName: estado
-            columns:
-              - column:
-                  name: nombre
-                  value: Rechazada
-              - column:
-                  name: descripcion
-                  value: Solicitud rechazada por no cumplir criterios
-  - changeSet:
-      id: Insertar datos semilla en tipo de prestamo
-      author: Waldir Maidana
-      changes:
-        - insert:
-            tableName: tipo_prestamo
-            columns:
-              - column:
-                  name: nombre
-                  value: Personal
-              - column:
-                  name: monto_minimo
-                  value: 100.00
-              - column:
-                  name: monto_maximo
-                  value: 10000.00
-              - column:
-                  name: tasa_interes
-                  value: 5.50
-              - column:
-                  name: validacion_automatica
-                  valueBoolean: false
-        - insert:
-            tableName: tipo_prestamo
-            columns:
-              - column:
-                  name: nombre
-                  value: Vehicular
-              - column:
-                  name: monto_minimo
-                  value: 5000.00
-              - column:
-                  name: monto_maximo
-                  value: 50000.00
-              - column:
-                  name: tasa_interes
-                  value: 7.25
-              - column:
-                  name: validacion_automatica
-                  valueBoolean: true
-        - insert:
-            tableName: tipo_prestamo
-            columns:
-              - column:
-                  name: nombre
-                  value: Hipotecario
-              - column:
-                  name: monto_minimo
-                  value: 20000.00
-              - column:
-                  name: monto_maximo
-                  value: 200000.00
-              - column:
-                  name: tasa_interes
-                  value: 4.75
-              - column:
-                  name: validacion_automatica
-                  valueBoolean: false
-
-  - changeSet:
-      id: Completar datos semilla faltantes
-      author: Waldir Maidana
-      changes:
-        # Agregar estado faltante: Cancelada
-        - insert:
-            tableName: estado
-            columns:
-              - column:
-                  name: nombre
-                  value: Cancelada
-              - column:
-                  name: descripcion
-                  value: Solicitud cancelada por el cliente
-
-        # Agregar tipos de préstamo faltantes: Comercial y Educativo
-        - insert:
-            tableName: tipo_prestamo
-            columns:
-              - column:
-                  name: nombre
-                  value: Comercial
-              - column:
-                  name: monto_minimo
-                  value: 10000.00
-              - column:
-                  name: monto_maximo
-                  value: 100000.00
-              - column:
-                  name: tasa_interes
-                  value: 6.25
-              - column:
-                  name: validacion_automatica
-                  valueBoolean: true
-        - insert:
-            tableName: tipo_prestamo
-            columns:
-              - column:
-                  name: nombre
-                  value: Educativo
-              - column:
-                  name: monto_minimo
-                  value: 1000.00
-              - column:
-                  name: monto_maximo
-                  value: 25000.00
-              - column:
-                  name: tasa_interes
-                  value: 3.50
-              - column:
-                  name: validacion_automatica
-                  valueBoolean: false
-
+    -   changeSet:
+            id: Agregar indices para mejorar rendimiento
+            author: Waldir Maidana
+            changes:
+                -   createIndex:
+                        tableName: solicitud
+                        indexName: idx_solicitud_email
+                        columns:
+                            -   column:
+                                    name: email
+                -   createIndex:
+                        tableName: solicitud
+                        indexName: idx_solicitud_documento
+                        columns:
+                            -   column:
+                                    name: documento_identidad
+                -   createIndex:
+                        tableName: solicitud
+                        indexName: idx_solicitud_fecha_creacion
+                        columns:
+                            -   column:
+                                    name: fecha_creacion

@@ -9,6 +9,8 @@ spring:
         add-properties: false
 
 logging:
+    level:
+        root: INFO
     pattern:
         level: "%5p [${spring.application.name}] [cid:%X{correlationId}]"
     config: ${LOGGING_CONFIG_FILE:classpath:logback-spring.xml}

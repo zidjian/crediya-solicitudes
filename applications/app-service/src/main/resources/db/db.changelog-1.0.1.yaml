@@ -1,0 +1,130 @@
+databaseChangeLog:
+    -   changeSet:
+            id: Insertar datos semilla en estado
+            author: Waldir Maidana
+            preConditions:
+                -   not:
+                        -   sqlCheck:
+                                expectedResult: 4
+                                sql: SELECT COUNT(*) FROM estado WHERE id_estado IN (1,2,3,4)
+            changes:
+                -   insert:
+                        tableName: estado
+                        columns:
+                            -   column:
+                                    name: id_estado
+                                    value: 1
+                            -   column:
+                                    name: nombre
+                                    value: Pendiente de revision
+                            -   column:
+                                    name: descripcion
+                                    value: Solicitud pendiente de revisión
+                -   insert:
+                        tableName: estado
+                        columns:
+                            -   column:
+                                    name: id_estado
+                                    value: 2
+                            -   column:
+                                    name: nombre
+                                    value: Aprobada
+                            -   column:
+                                    name: descripcion
+                                    value: Solicitud aprobada y lista para desembolso
+                -   insert:
+                        tableName: estado
+                        columns:
+                            -   column:
+                                    name: id_estado
+                                    value: 3
+                            -   column:
+                                    name: nombre
+                                    value: Rechazada
+                            -   column:
+                                    name: descripcion
+                                    value: Solicitud rechazada por no cumplir criterios
+                -   insert:
+                        tableName: estado
+                        columns:
+                            -   column:
+                                    name: id_estado
+                                    value: 4
+                            -   column:
+                                    name: nombre
+                                    value: Revision manual
+                            -   column:
+                                    name: descripcion
+                                    value: Solicitud requiere revisión manual adicional
+    -   changeSet:
+            id: Insertar datos semilla en tipo de prestamo
+            author: Waldir Maidana
+            preConditions:
+                -   not:
+                        -   sqlCheck:
+                                expectedResult: 3
+                                sql: SELECT COUNT(*) FROM tipo_prestamo WHERE id_tipo_prestamo IN (1,2,3)
+            changes:
+                -   insert:
+                        tableName: tipo_prestamo
+                        columns:
+                            -   column:
+                                    name: id_tipo_prestamo
+                                    value: 1
+                            -   column:
+                                    name: nombre
+                                    value: Personal
+                            -   column:
+                                    name: monto_minimo
+                                    value: 100.00
+                            -   column:
+                                    name: monto_maximo
+                                    value: 10000.00
+                            -   column:
+                                    name: tasa_interes
+                                    value: 5.50
+                            -   column:
+                                    name: validacion_automatica
+                                    valueBoolean: false
+                -   insert:
+                        tableName: tipo_prestamo
+                        columns:
+                            -   column:
+                                    name: id_tipo_prestamo
+                                    value: 2
+                            -   column:
+                                    name: nombre
+                                    value: Vehicular
+                            -   column:
+                                    name: monto_minimo
+                                    value: 5000.00
+                            -   column:
+                                    name: monto_maximo
+                                    value: 50000.00
+                            -   column:
+                                    name: tasa_interes
+                                    value: 7.25
+                            -   column:
+                                    name: validacion_automatica
+                                    valueBoolean: true
+                -   insert:
+                        tableName: tipo_prestamo
+                        columns:
+                            -   column:
+                                    name: id_tipo_prestamo
+                                    value: 3
+                            -   column:
+                                    name: nombre
+                                    value: Hipotecario
+                            -   column:
+                                    name: monto_minimo
+                                    value: 20000.00
+                            -   column:
+                                    name: monto_maximo
+                                    value: 200000.00
+                            -   column:
+                                    name: tasa_interes
+                                    value: 4.75
+                            -   column:
+                                    name: validacion_automatica
+                                    valueBoolean: false

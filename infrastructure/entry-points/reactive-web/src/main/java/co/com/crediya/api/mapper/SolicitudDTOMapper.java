@@ -14,10 +14,8 @@ public class SolicitudDTOMapper {
                 solicitud.getEmail(),
                 solicitud.getMonto(),
                 solicitud.getPlazo(),
-                solicitud.getTipoPrestamo().name(),
-                solicitud.getEstado().getDescripcion(),
-                solicitud.getFechaCreacion(),
-                solicitud.getFechaActualizacion()
+                solicitud.getIdTipoPrestamo().toString(),
+                solicitud.getIdEstado().toString()
         );
     }
 }

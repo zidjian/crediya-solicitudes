@@ -1,5 +1,6 @@
 package co.com.crediya.r2dbcmysql.entities;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -7,6 +8,11 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.math.BigDecimal;
 
 @Table("tipo_prestamo")
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class TipoPrestamoEntity {
 
     @Id
@@ -26,66 +32,4 @@ public class TipoPrestamoEntity {
 
     @Column("validacion_automatica")
     private Boolean validacionAutomatica;
-
-    public TipoPrestamoEntity() {
-    }
-
-    public TipoPrestamoEntity(Long idTipoPrestamo, String nombre, BigDecimal montoMinimo,
-                             BigDecimal montoMaximo, BigDecimal tasaInteres, Boolean validacionAutomatica) {
-        this.idTipoPrestamo = idTipoPrestamo;
-        this.nombre = nombre;
-        this.montoMinimo = montoMinimo;
-        this.montoMaximo = montoMaximo;
-        this.tasaInteres = tasaInteres;
-        this.validacionAutomatica = validacionAutomatica;
-    }
-
-    // Getters y Setters
-    public Long getIdTipoPrestamo() {
-        return idTipoPrestamo;
-    }
-
-    public void setIdTipoPrestamo(Long idTipoPrestamo) {
-        this.idTipoPrestamo = idTipoPrestamo;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public BigDecimal getMontoMinimo() {
-        return montoMinimo;
-    }
-
-    public void setMontoMinimo(BigDecimal montoMinimo) {
-        this.montoMinimo = montoMinimo;
-    }
-
-    public BigDecimal getMontoMaximo() {
-        return montoMaximo;
-    }
-
-    public void setMontoMaximo(BigDecimal montoMaximo) {
-        this.montoMaximo = montoMaximo;
-    }
-
-    public BigDecimal getTasaInteres() {
-        return tasaInteres;
-    }
-
-    public void setTasaInteres(BigDecimal tasaInteres) {
-        this.tasaInteres = tasaInteres;
-    }
-
-    public Boolean getValidacionAutomatica() {
-        return validacionAutomatica;
-    }
-
-    public void setValidacionAutomatica(Boolean validacionAutomatica) {
-        this.validacionAutomatica = validacionAutomatica;
-    }
 }

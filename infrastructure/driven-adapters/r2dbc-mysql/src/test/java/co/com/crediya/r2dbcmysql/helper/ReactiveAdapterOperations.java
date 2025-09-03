@@ -1,6 +1,5 @@
 package co.com.crediya.r2dbcmysql.helper;
 
-import co.com.crediya.r2dbcmysql.entities.UsuarioEntity;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.data.domain.Example;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
@@ -52,9 +51,9 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
         return repository.saveAll(data);
     }
 
-    public Mono<UsuarioEntity> findById(I id) {
+    public Mono<E> findById(I id) {
         return repository.findById(id)
-                .map(data -> (UsuarioEntity) toEntity(data));
+                .map(this::toEntity);
     }
 
     public Flux<E> findByExample(E entity) {
@@ -62,9 +61,9 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
                 .map(this::toEntity);
     }
 
-    public Flux<UsuarioEntity> findAll() {
+    public Flux<E> findAll() {
         return repository.findAll()
-                .map(data -> (UsuarioEntity) toEntity(data));
+                .map(this::toEntity);
     }
 
 }

@@ -1,40 +1,36 @@
 package co.com.crediya.r2dbcmysql.mapper;
 
-import co.com.crediya.model.solicitud.TipoPrestamoConfig;
-import co.com.crediya.model.solicitud.enums.TipoPrestamo;
+import co.com.crediya.model.solicitud.TipoPrestamo;
 import co.com.crediya.r2dbcmysql.entities.TipoPrestamoEntity;
-import co.com.crediya.r2dbcmysql.services.EstadoTipoPrestamoMappingService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
-@RequiredArgsConstructor
+@Mapper(componentModel = "spring")
 public class TipoPrestamoEntityMapper {
+    public TipoPrestamo toEntity(TipoPrestamo domain)  {
+        if (domain == null) {
+            return null;
+        }
+        return TipoPrestamo.toTipoPrestamo(
+                domain.getIdTipoPrestamo(),
+                domain.getNombre(),
+                domain.getMontoMinimo(),
+                domain.getMontoMaximo(),
+                domain.getTasaInteres(),
+                domain.isValidacionAutomatica()
+        );
+    }
 
-    private final EstadoTipoPrestamoMappingService mappingService;
-
-    public TipoPrestamoConfig toDomain(TipoPrestamoEntity entity) {
-        TipoPrestamo tipoPrestamo = mappingService.getTipoPrestamoById(entity.getIdTipoPrestamo());
-
-        return new TipoPrestamoConfig(
+    public TipoPrestamo toDomain(TipoPrestamoEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return TipoPrestamo.toTipoPrestamo(
                 entity.getIdTipoPrestamo(),
-                tipoPrestamo,
                 entity.getNombre(),
                 entity.getMontoMinimo(),
                 entity.getMontoMaximo(),
                 entity.getTasaInteres(),
                 entity.getValidacionAutomatica()
-        );
-    }
-
-    public TipoPrestamoEntity toEntity(TipoPrestamoConfig config) {
-        return new TipoPrestamoEntity(
-                config.getIdTipoPrestamo(),
-                config.getNombre(),
-                config.getMontoMinimo(),
-                config.getMontoMaximo(),
-                config.getTasaInteres(),
-                config.isValidacionAutomatica()
         );
     }
 }

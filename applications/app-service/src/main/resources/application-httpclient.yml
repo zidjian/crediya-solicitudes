@@ -1,0 +1,20 @@
+# HTTP Client Configuration
+crediya:
+  httpclient:
+    timeout:
+      connection: 5000  # Connection timeout in milliseconds
+      read: 10000       # Read timeout in milliseconds
+      write: 10000      # Write timeout in milliseconds
+    max-memory-size: 1048576  # Max memory size for responses (1MB)
+
+# Microservices endpoints
+microservices:
+  usuarios:
+    base-url: ${USUARIOS_SERVICE_URL:http://localhost:8081}
+
+# Logging configuration for HTTP client
+logging:
+  level:
+    co.com.crediya.httpclient: DEBUG
+    reactor.netty.http.client: INFO
+

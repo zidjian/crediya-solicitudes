@@ -1,10 +1,11 @@
 package co.com.crediya.httpclient;
 
 import co.com.crediya.httpclient.dto.UsuarioResponseDTO;
+import co.com.crediya.httpclient.exception.HttpClientExceptionHandler;
 import co.com.crediya.model.usuario.gateways.UsuarioValidacionRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -12,16 +13,16 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class UsuarioHttpClient implements UsuarioValidacionRepository {
 
     private final WebClient webClient;
-    private final String usuariosBaseUrl;
+    private final HttpClientExceptionHandler exceptionHandler;
 
-    public UsuarioHttpClient(WebClient webClient,
-                           @Value("${microservices.usuarios.base-url:http://localhost:8080}") String usuariosBaseUrl) {
-        this.webClient = webClient;
-        this.usuariosBaseUrl = usuariosBaseUrl;
-    }
+    @Value("${microservices.usuarios.base-url:http://localhost:8080}")
+    private String usuariosBaseUrl;
+
+    private static final String USUARIOS_ENDPOINT = "/api/v1/usuarios/documento/{documento}";
 
     @Override
     public Mono<Boolean> existeUsuarioPorDocumento(String documentoIdentidad) {
@@ -29,22 +30,27 @@ public class UsuarioHttpClient implements UsuarioValidacionRepository {
 
         return webClient
                 .get()
-                .uri(usuariosBaseUrl + "/api/v1/usuarios/documento/{documento}", documentoIdentidad)
+                .uri(usuariosBaseUrl + USUARIOS_ENDPOINT, documentoIdentidad)
                 .retrieve()
                 .bodyToMono(UsuarioResponseDTO.class)
-                .map(usuario -> usuario != null && usuario.isActivo())
-                .doOnSuccess(existe -> log.info("Usuario con documento {} existe: {}", documentoIdentidad, existe))
-                .onErrorResume(WebClientResponseException.class, ex -> {
-                    if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                        log.info("Usuario con documento {} no encontrado", documentoIdentidad);
-                        return Mono.just(false);
-                    }
-                    log.error("Error al consultar usuario con documento {}: {}", documentoIdentidad, ex.getMessage());
-                    return Mono.error(new RuntimeException("Error al validar usuario: " + ex.getMessage()));
-                })
-                .onErrorResume(Exception.class, ex -> {
-                    log.error("Error inesperado al consultar usuario con documento {}: {}", documentoIdentidad, ex.getMessage());
-                    return Mono.error(new RuntimeException("Error interno al validar usuario: " + ex.getMessage()));
-                });
+                .doOnNext(usuario -> log.debug("Usuario encontrado - ID: {}, Activo: {}",
+                         usuario.getIdUsuario(), usuario.isActivo()))
+                .map(this::esUsuarioValido)
+                .doOnSuccess(existe -> log.info("Usuario con documento {} existe y es válido: {}",
+                           documentoIdentidad, existe))
+                .onErrorResume(WebClientResponseException.class, ex ->
+                    exceptionHandler.handleWebClientException(ex, documentoIdentidad))
+                .onErrorResume(Exception.class, ex ->
+                    exceptionHandler.handleGenericException(ex, documentoIdentidad));
+    }
+
+    private boolean esUsuarioValido(UsuarioResponseDTO usuario) {
+        if (usuario == null) {
+            log.warn("Usuario response es null");
+            return false;
+        }
+
+        return true;
     }
 }
+
