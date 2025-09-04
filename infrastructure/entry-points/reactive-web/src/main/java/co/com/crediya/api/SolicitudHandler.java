@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 @Component
@@ -47,7 +48,7 @@ public class SolicitudHandler {
                     dto.documentoIdentidad(),
                     dto.email(),
                     dto.monto(),
-                    dto.plazo(),
+                    LocalDate.parse(dto.plazo()),
                     dto.idTipoPrestamo()
                 ))
                 .doOnSuccess(solicitud -> log.info("[CREAR_SOLICITUD] Solicitud creada exitosamente con ID: {} para documento: {}",

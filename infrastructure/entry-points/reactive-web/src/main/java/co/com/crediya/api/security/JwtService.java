@@ -20,8 +20,8 @@ public class JwtService {
     private final long expirationTimeInHours;
 
     public JwtService(
-            @Value("${jwt.secret:}") String secretKeyString,
-            @Value("${jwt.expiration:24}") long expirationTimeInHours
+            @Value("${jwt.secret:mySecretKey123456789012345678901234567890}") String secretKeyString, // Obtiene los env o uso los datos por defecto
+            @Value("${jwt.expiration:24}") long expirationTimeInHours // Obtiene los env o uso los datos por defecto
     ) {
         this.expirationTimeInHours = expirationTimeInHours;
 

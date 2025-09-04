@@ -13,7 +13,7 @@ public class Solicitud {
     private final Long idEstado;
 
     private Solicitud(Long idSolicitud, String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo,
-                     Long idTipoPrestamo, Long idEstado) {
+                      Long idTipoPrestamo, Long idEstado) {
         if (documentoIdentidad == null || documentoIdentidad.isBlank()) {
             throw new IllegalArgumentException("El documento de identidad es obligatorio");
         }
@@ -40,7 +40,7 @@ public class Solicitud {
     }
 
     public static Solicitud toSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo,
-                                       Long idTipoPrestamo, Long idEstado) {
+                                        Long idTipoPrestamo, Long idEstado) {
         return new Solicitud(null, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
     }
 

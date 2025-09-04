@@ -101,14 +101,12 @@ public class AuthorizationService {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado: rol insuficiente");
                     }
                 });
-        // Remover onErrorResume para que los errores lleguen al GlobalErrorHandler
     }
 
     public Mono<ServerResponse> requireAuthentication(ServerRequest request,
                                                       java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
         return validateTokenAndGetRole(request)
                 .flatMap(role -> handler.apply(request));
-        // Remover onErrorResume para que los errores lleguen al GlobalErrorHandler
     }
 
     public Mono<ServerResponse> authorizeOwnershipAndRole(ServerRequest request,
