@@ -4,7 +4,6 @@ import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
-import co.com.crediya.model.usuario.gateways.UsuarioValidacionRepository;
 import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -16,33 +15,17 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
-    private final UsuarioValidacionRepository usuarioValidacionRepository;
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final EstadoRepository estadoRepository;
 
     public Mono<Solicitud> crearSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
-        return validarUsuarioExiste(documentoIdentidad)
-                .then(validarSolicitudNoExiste(documentoIdentidad))
+        return validarSolicitudNoExiste(documentoIdentidad)
                 .then(validarIdTipoPrestamo(idTipoPrestamo))
                 .flatMap(validatedIdTipoPrestamo -> validarTipoPrestamoExiste(validatedIdTipoPrestamo)
                         .then(validarMontoParaTipoPrestamo(monto, validatedIdTipoPrestamo))
                         .then(estadoRepository.obtenerIdEstadoPendienteRevision())
                         .map(idEstadoPendiente -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
                 .flatMap(solicitudRepository::crear);
-    }
-
-    private Mono<Void> validarUsuarioExiste(String documentoIdentidad) {
-        if (documentoIdentidad == null || documentoIdentidad.isBlank()) {
-            return Mono.error(new ValidationException("El documento de identidad es obligatorio"));
-        }
-
-        return usuarioValidacionRepository.existeUsuarioPorDocumento(documentoIdentidad.trim())
-                .flatMap(existe -> {
-                    if (!existe) {
-                        return Mono.error(new ValidationException(String.format("No existe un usuario con el documento de identidad: %s", documentoIdentidad)));
-                    }
-                    return Mono.empty();
-                });
     }
 
     private Mono<Void> validarSolicitudNoExiste(String documentoIdentidad) {

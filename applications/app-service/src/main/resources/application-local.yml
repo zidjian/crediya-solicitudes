@@ -22,6 +22,10 @@ springdoc:
     webflux:
         use-root-path: true
 
+jwt:
+    secret: "mySecretKey123456789012345678901234567890123456789012345678901234567890"
+    expiration: 24
+
 adapters:
     r2dbc:
         host: "localhost"

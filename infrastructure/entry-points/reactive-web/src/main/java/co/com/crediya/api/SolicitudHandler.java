@@ -2,6 +2,7 @@ package co.com.crediya.api;
 
 import co.com.crediya.api.dto.CrearSolicitudDTO;
 import co.com.crediya.api.mapper.SolicitudDTOMapper;
+import co.com.crediya.api.security.AuthorizationService;
 import co.com.crediya.usecase.solicitud.SolicitudUseCase;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.Set;
@@ -24,6 +26,7 @@ public class SolicitudHandler {
     private final SolicitudUseCase solicitudUseCase;
     private final SolicitudDTOMapper mapper;
     private final Validator validator;
+    private final AuthorizationService authorizationService;
 
     public Mono<ServerResponse> escucharCrearSolicitud(ServerRequest serverRequest) {
         return serverRequest
@@ -35,7 +38,10 @@ public class SolicitudHandler {
                         log.warn("[CREAR_SOLICITUD] Validación fallida: {} violación(es)", violaciones.size());
                         return Mono.error(new ConstraintViolationException(violaciones));
                     }
-                    return Mono.just(dto);
+
+                    // Validar que el documento del token coincida con el de la petición
+                    return validateDocumentoOwnership(serverRequest, dto.documentoIdentidad())
+                            .then(Mono.just(dto));
                 })
                 .flatMap(dto -> solicitudUseCase.crearSolicitud(
                     dto.documentoIdentidad(),
@@ -51,5 +57,20 @@ public class SolicitudHandler {
                         .bodyValue(mapper.toResponse(solicitudCreada))
                 )
                 .doOnError(ex -> log.error("[CREAR_SOLICITUD] Error procesando solicitud: {}", ex.getMessage()));
+    }
+
+    private Mono<Void> validateDocumentoOwnership(ServerRequest request, String documentoIdentidadPeticion) {
+        return authorizationService.extractDocumentoIdentidadFromToken(request)
+                .flatMap(documentoIdentidadToken -> {
+                    if (!documentoIdentidadToken.equals(documentoIdentidadPeticion)) {
+                        log.warn("[CREAR_SOLICITUD] Documento en token {} no coincide con documento en petición {}",
+                               documentoIdentidadToken, documentoIdentidadPeticion);
+                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                               "No puede crear solicitudes para otros usuarios"));
+                    }
+                    log.info("[CREAR_SOLICITUD] Validación de documento exitosa: token={}, petición={}",
+                           documentoIdentidadToken, documentoIdentidadPeticion);
+                    return Mono.empty();
+                });
     }
 }

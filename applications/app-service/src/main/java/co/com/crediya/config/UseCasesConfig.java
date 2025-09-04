@@ -3,7 +3,6 @@ package co.com.crediya.config;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
-import co.com.crediya.model.usuario.gateways.UsuarioValidacionRepository;
 import co.com.crediya.r2dbcmysql.TipoPrestamoRepositoryAdapter;
 import co.com.crediya.r2dbcmysql.TipoPrestamoReactiveRepository;
 import co.com.crediya.r2dbcmysql.mapper.TipoPrestamoEntityMapper;
@@ -23,9 +22,8 @@ public class UseCasesConfig {
 
     @Bean
     public SolicitudUseCase solicitudUseCase(SolicitudRepository solicitudRepository,
-                                           UsuarioValidacionRepository usuarioValidacionRepository,
                                            TipoPrestamoRepository tipoPrestamoRepository,
                                            EstadoRepository estadoRepository) {
-        return new SolicitudUseCase(solicitudRepository, usuarioValidacionRepository, tipoPrestamoRepository, estadoRepository);
+        return new SolicitudUseCase(solicitudRepository, tipoPrestamoRepository, estadoRepository);
     }
 }
