@@ -2,9 +2,11 @@ package co.com.crediya.api.docs;
 
 import co.com.crediya.api.SolicitudHandler;
 import co.com.crediya.api.dto.CrearSolicitudDTO;
+import co.com.crediya.api.dto.PaginatedResponseDTO;
 import co.com.crediya.api.dto.RespuestaSolicitudDTO;
 import co.com.crediya.shared.error.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -43,6 +45,43 @@ public interface SolicitudControllerDocs {
                                     @ApiResponse(responseCode = "400", description = "Error de validación en los datos enviados",
                                             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
                                     @ApiResponse(responseCode = "422", description = "Tipo de préstamo inválido",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/solicitud",
+                    produces = MediaType.APPLICATION_JSON_VALUE,
+                    method = RequestMethod.GET,
+                    beanClass = SolicitudHandler.class,
+                    beanMethod = "escucharSolicitudesPaginadas",
+                    operation = @Operation(
+                            operationId = "getSolicitudes",
+                            summary = "Obtener solicitudes paginadas",
+                            description = "Obtiene una lista paginada de solicitudes de crédito del usuario autenticado. Permite navegar a través de múltiples páginas de resultados.",
+                            tags = {"Solicitudes"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "pagina",
+                                            description = "Número de página (inicia en 0)",
+                                            example = "0",
+                                            schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")
+                                    ),
+                                    @Parameter(
+                                            name = "tamanio",
+                                            description = "Cantidad de elementos por página",
+                                            example = "10",
+                                            schema = @Schema(type = "integer", minimum = "1", maximum = "100", defaultValue = "10")
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Solicitudes obtenidas exitosamente",
+                                            content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class))),
+                                    @ApiResponse(responseCode = "400", description = "Parámetros de paginación inválidos",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                                    @ApiResponse(responseCode = "403", description = "Acceso denegado - rol insuficiente",
                                             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor",
                                             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))

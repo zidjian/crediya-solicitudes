@@ -1,6 +1,7 @@
 package co.com.crediya.api.security;
 
 import co.com.crediya.usecase.solicitud.exceptions.BusinessException;
+import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -98,7 +99,7 @@ public class AuthorizationService {
                     } else {
                         log.warn("Acceso denegado para rol: {} en ruta: {}", role, request.path());
                         // Lanzar excepción para que sea manejada por GlobalErrorHandler
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado: rol insuficiente");
+                        throw new ValidationException("Acceso denegado: rol insuficiente");
                     }
                 });
     }
@@ -121,7 +122,7 @@ public class AuthorizationService {
 
                     if (!allowedRoles.contains(role)) {
                         log.warn("Acceso denegado para rol: {} en ruta: {}", role, request.path());
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado: rol insuficiente");
+                        return Mono.error(new ValidationException("Acceso denegado: rol insuficiente"));
                     }
 
                     // Validar que el usuario solo pueda crear solicitudes para su propio documento

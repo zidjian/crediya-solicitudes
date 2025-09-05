@@ -20,7 +20,8 @@ public class SolicitudEntityMapper {
     }
 
     public Solicitud toDomain(SolicitudEntity entity) {
-        return Solicitud.toSolicitud(
+        return Solicitud.fromDatabase(
+                entity.getIdSolicitud(),
                 entity.getDocumentoIdentidad(),
                 entity.getEmail(),
                 entity.getMonto(),

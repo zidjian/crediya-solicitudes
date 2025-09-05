@@ -1,5 +1,7 @@
 package co.com.crediya.usecase.solicitud;
 
+import co.com.crediya.model.common.PageRequest;
+import co.com.crediya.model.common.PageResult;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
@@ -26,6 +28,11 @@ public class SolicitudUseCase {
                         .then(estadoRepository.obtenerIdEstadoPendienteRevision())
                         .map(idEstadoPendiente -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
                 .flatMap(solicitudRepository::crear);
+    }
+
+    public Mono<PageResult<Solicitud>> obtenerSolicitudesPaginadas(int page, int size) {
+        PageRequest pageRequest = new PageRequest(page, size);
+        return solicitudRepository.obtenerSolicitudes(pageRequest);
     }
 
     private Mono<Void> validarSolicitudNoExiste(String documentoIdentidad) {

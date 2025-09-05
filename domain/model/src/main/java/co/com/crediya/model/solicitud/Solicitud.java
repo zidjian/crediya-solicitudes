@@ -44,6 +44,11 @@ public class Solicitud {
         return new Solicitud(null, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
     }
 
+    public static Solicitud fromDatabase(Long idSolicitud, String documentoIdentidad, String email, BigDecimal monto,
+                                        LocalDate plazo, Long idTipoPrestamo, Long idEstado) {
+        return new Solicitud(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+    }
+
     public Solicitud cambiarEstado(Long nuevoIdEstado) {
         return new Solicitud(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, nuevoIdEstado);
     }

@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -95,8 +94,6 @@ class SolicitudUseCaseTest {
 
         when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
                 .thenReturn(Mono.just(true));
-
-        // Act & Assert
         StepVerifier.create(solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo))
                 .expectErrorMatches(throwable ->
                     throwable instanceof AlreadyExistException &&

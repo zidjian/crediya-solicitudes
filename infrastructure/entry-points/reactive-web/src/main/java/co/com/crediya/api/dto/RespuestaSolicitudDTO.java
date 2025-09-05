@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record RespuestaSolicitudDTO(
-        Long idSolicitud,
+        Long id,
         String documentoIdentidad,
         String email,
         BigDecimal monto,
