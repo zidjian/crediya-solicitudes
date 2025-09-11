@@ -13,6 +13,8 @@ public record RespuestaSolicitudDTO(
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate plazo,
         String tipoPrestamo,
-        String estado
+        String estado,
+        BigDecimal tasaInteres,
+        BigDecimal deudaTotalMensual
 ) {
 }

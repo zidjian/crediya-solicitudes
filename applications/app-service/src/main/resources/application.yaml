@@ -1,28 +1,31 @@
 server:
-    port: 8081
+  port: 8081
 spring:
-    profiles:
-        active: ${SPRING_PROFILES_ACTIVE:local}
-    application:
-        name: "Solicitudes"
-    devtools:
-        add-properties: false
-
+  profiles:
+    active: "${SPRING_PROFILES_ACTIVE:local}"
+  application:
+    name: "Solicitudes"
+  devtools:
+    add-properties: false
 logging:
-    level:
-        root: INFO
-    pattern:
-        level: "%5p [${spring.application.name}] [cid:%X{correlationId}]"
-    config: ${LOGGING_CONFIG_FILE:classpath:logback-spring.xml}
-    file:
-        path: ${LOG_PATH:build/logs}
-
+  level:
+    root: "INFO"
+  pattern:
+    level: "%5p [${spring.application.name}] [cid:%X{correlationId}]"
+  config: "${LOGGING_CONFIG_FILE:classpath:logback-spring.xml}"
+  file:
+    path: "${LOG_PATH:build/logs}"
 management:
-    endpoints:
-        web:
-            exposure:
-                include: "health,prometheus"
-    endpoint:
-        health:
-            probes:
-                enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+adapter:
+  sqs:
+    region: "us-east-1"
+    queueUrl: "https://sqs.us-east-1.amazonaws.com/920004595108/cola-notificaciones"
+    endpoint: "https://sqs.us-east-1.amazonaws.com/920004595108/cola-notificaciones"

@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Repository
 @Slf4j
 public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -47,20 +49,20 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
     }
 
     @Override
-    public Mono<PageResult<Solicitud>> obtenerSolicitudes(co.com.crediya.model.common.PageRequest pageRequest) {
+    public Mono<PageResult<Solicitud>> obtenerSolicitudes(int page, int size) {
         log.debug("[SOLICITUD_ADAPTER] Obteniendo solicitudes paginadas - página: {}, tamañotamaño: {}",
-                pageRequest.page(), pageRequest.size());
+                page, size);
 
         PageRequest springPageRequest =
-                PageRequest.of(pageRequest.page(), pageRequest.size());
+                PageRequest.of(page, size);
 
         return super.repository.count()
                 .flatMap(total -> {
                     if (total == 0) {
                         return Mono.just(new PageResult<Solicitud>(
-                                java.util.List.of(),
-                                pageRequest.page(),
-                                pageRequest.size(),
+                                List.of(),
+                                page,
+                                size,
                                 total
                         ));
                     }
@@ -68,14 +70,40 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
                     return super.repository.findAllByOrderByIdSolicitudDesc(springPageRequest)
                             .map(solicitudEntityMapper::toDomain)
                             .collectList()
-                            .map(solicitudes -> new PageResult<Solicitud>(
+                            .map(solicitudes -> new PageResult<>(
                                     solicitudes,
-                                    pageRequest.page(),
-                                    pageRequest.size(),
+                                    page,
+                                    size,
                                     total
                             ));
                 })
                 .doOnSuccess(result -> log.debug("[SOLICITUD_ADAPTER] Se obtuvieron {} solicitudes de {} totales",
                         result.content().size(), result.totalElements()));
+    }
+
+    @Override
+    public Mono<Solicitud> actualizar(Solicitud solicitud) {
+        log.debug("[SOLICITUD_ADAPTER] Actualizando solicitud ID: {}", solicitud.getIdSolicitud());
+        SolicitudEntity entity = solicitudEntityMapper.toEntity(solicitud);
+        return super.repository.save(entity)
+                .map(solicitudEntityMapper::toDomain)
+                .doOnSuccess(s -> log.debug("[SOLICITUD_ADAPTER] Solicitud actualizada con ID: {}", s.getIdSolicitud()))
+                .doOnError(error -> log.error("[SOLICITUD_ADAPTER] Error actualizando solicitud: {}", error.getMessage()));
+    }
+
+    @Override
+    public Mono<Solicitud> findById(Long idSolicitud) {
+        log.debug("[SOLICITUD_ADAPTER] Buscando solicitud por ID: {}", idSolicitud);
+        return super.repository.findById(idSolicitud)
+                .map(solicitudEntityMapper::toDomain)
+                .doOnSuccess(s -> log.debug("[SOLICITUD_ADAPTER] Solicitud encontrada: {}", s.getIdSolicitud()))
+                .doOnError(error -> log.error("[SOLICITUD_ADAPTER] Error buscando solicitud por ID: {}", error.getMessage()));
+    }
+
+    @Override
+    public Mono<Boolean> existeById(Long idSolicitud) {
+        log.debug("[SOLICITUD_ADAPTER] Validando existencia de solicitud por ID: {}", idSolicitud);
+        return super.repository.existsById(idSolicitud)
+                .doOnSuccess(existe -> log.debug("[SOLICITUD_ADAPTER] Solicitud existe: {}", existe));
     }
 }

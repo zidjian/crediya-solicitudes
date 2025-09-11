@@ -1,6 +1,10 @@
 apply plugin: 'org.springframework.boot'
 
 dependencies {
+	implementation project(':sqs-sender')
+	implementation project(':metrics')
+	implementation 'software.amazon.awssdk:sts'
+	implementation project(':sqs-listener')
 	implementation project(':shared')
 	implementation project(':r2dbc-mysql')
 	implementation project(':http-client')

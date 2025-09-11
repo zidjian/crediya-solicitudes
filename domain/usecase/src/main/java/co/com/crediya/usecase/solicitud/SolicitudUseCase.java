@@ -1,12 +1,11 @@
 package co.com.crediya.usecase.solicitud;
 
-import co.com.crediya.model.common.PageRequest;
 import co.com.crediya.model.common.PageResult;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
+import co.com.crediya.model.solicitud.gateways.NotificationGateway;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
-import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -19,10 +18,10 @@ public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final EstadoRepository estadoRepository;
+    private final NotificationGateway notificationGateway;
 
     public Mono<Solicitud> crearSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
-        return validarSolicitudNoExiste(documentoIdentidad)
-                .then(validarIdTipoPrestamo(idTipoPrestamo))
+        return validarIdTipoPrestamo(idTipoPrestamo)
                 .flatMap(validatedIdTipoPrestamo -> validarTipoPrestamoExiste(validatedIdTipoPrestamo)
                         .then(validarMontoParaTipoPrestamo(monto, validatedIdTipoPrestamo))
                         .then(estadoRepository.obtenerIdEstadoPendienteRevision())
@@ -31,33 +30,39 @@ public class SolicitudUseCase {
     }
 
     public Mono<PageResult<Solicitud>> obtenerSolicitudesPaginadas(int page, int size) {
-        PageRequest pageRequest = new PageRequest(page, size);
-        return solicitudRepository.obtenerSolicitudes(pageRequest);
+        return solicitudRepository.obtenerSolicitudes(page, size);
     }
 
-    private Mono<Void> validarSolicitudNoExiste(String documentoIdentidad) {
-        return solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad.trim())
-                .flatMap(existe -> {
-                    if (existe) {
-                        return Mono.error(new AlreadyExistException(
-                                String.format("Ya existe una solicitud para el documento de identidad: %s", documentoIdentidad)));
-                    }
-                    return Mono.empty();
-                });
+    public Mono<Solicitud> actualizarSolicitud(Long idSolicitud, Long nuevoIdEstado) {
+        return validarIdSolicitud(idSolicitud)
+                .flatMap(validatedIdSolicitud -> validarSolicitudExiste(validatedIdSolicitud)
+                        .then(validarIdEstado(nuevoIdEstado))
+                        .then(validarEstadoExiste(nuevoIdEstado))
+                        .then(solicitudRepository.findById(validatedIdSolicitud))
+                        .map(solicitud -> solicitud.cambiarEstado(nuevoIdEstado))
+                        .flatMap(solicitudRepository::actualizar)
+                        .flatMap(solicitudActualizada ->
+                                // Enviar notificación SQS después de actualizar la solicitud
+                                estadoRepository.findById(nuevoIdEstado)
+                                        .flatMap(estado -> notificationGateway.enviarNotificacionEstadoSolicitud(
+                                                solicitudActualizada.getEmail(),
+                                                estado.getNombre(),
+                                                solicitudActualizada.getIdSolicitud()))
+                                        .then(Mono.just(solicitudActualizada))
+                        ));
     }
 
     private Mono<Long> validarIdTipoPrestamo(Long idTipoPrestamo) {
         if (idTipoPrestamo == null) {
             return Mono.error(new ValidationException("El ID del tipo de préstamo es obligatorio"));
         }
-
         return Mono.just(idTipoPrestamo);
     }
 
     private Mono<Void> validarTipoPrestamoExiste(Long idTipoPrestamo) {
         return tipoPrestamoRepository.existeById(idTipoPrestamo)
                 .flatMap(existe -> {
-                    if (!existe) {
+                    if (Boolean.FALSE.equals(existe)) {
                         return Mono.error(new ValidationException(String.format("No existe un tipo de préstamo con ID: %s", idTipoPrestamo)));
                     }
                     return Mono.empty();
@@ -77,5 +82,35 @@ public class SolicitudUseCase {
                     }
                     return Mono.empty();
                 });
+    }
+
+    private Mono<Long> validarIdSolicitud(Long idSolicitud) {
+        if (idSolicitud == null) {
+            return Mono.error(new ValidationException("El ID de la solicitud es obligatorio"));
+        }
+        return Mono.just(idSolicitud);
+    }
+
+    private Mono<Void> validarSolicitudExiste(Long idSolicitud) {
+        return solicitudRepository.existeById(idSolicitud)
+                .flatMap(existe -> {
+                    if (Boolean.FALSE.equals(existe)) {
+                        return Mono.error(new ValidationException(String.format("No existe una solicitud con ID: %s", idSolicitud)));
+                    }
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Long> validarIdEstado(Long idEstado) {
+        if (idEstado == null) {
+            return Mono.error(new ValidationException("El ID del estado es obligatorio"));
+        }
+        return Mono.just(idEstado);
+    }
+
+    private Mono<Void> validarEstadoExiste(Long idEstado) {
+        return estadoRepository.findById(idEstado)
+                .switchIfEmpty(Mono.error(new ValidationException(String.format("No existe un estado con ID: %s", idEstado))))
+                .then();
     }
 }

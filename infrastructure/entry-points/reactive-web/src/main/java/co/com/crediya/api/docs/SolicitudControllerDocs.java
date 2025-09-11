@@ -1,6 +1,7 @@
 package co.com.crediya.api.docs;
 
 import co.com.crediya.api.SolicitudHandler;
+import co.com.crediya.api.dto.ActualizarSolicitudDTO;
 import co.com.crediya.api.dto.CrearSolicitudDTO;
 import co.com.crediya.api.dto.PaginatedResponseDTO;
 import co.com.crediya.api.dto.RespuestaSolicitudDTO;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
@@ -34,6 +36,7 @@ public interface SolicitudControllerDocs {
                             summary = "Crear solicitud de crédito",
                             description = "Crea una nueva solicitud de crédito con validación de cliente y préstamo. Valida que el cliente exista y que el tipo de préstamo sea válido antes de crear la solicitud.",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             requestBody = @RequestBody(
                                     required = true,
                                     description = "Datos de la solicitud de crédito",
@@ -62,6 +65,7 @@ public interface SolicitudControllerDocs {
                             summary = "Obtener solicitudes paginadas",
                             description = "Obtiene una lista paginada de solicitudes de crédito del usuario autenticado. Permite navegar a través de múltiples páginas de resultados.",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             parameters = {
                                     @Parameter(
                                             name = "pagina",
@@ -76,6 +80,35 @@ public interface SolicitudControllerDocs {
                                             schema = @Schema(type = "integer", minimum = "1", maximum = "100", defaultValue = "10")
                                     )
                             },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Solicitudes obtenidas exitosamente",
+                                            content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class))),
+                                    @ApiResponse(responseCode = "400", description = "Parámetros de paginación inválidos",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                                    @ApiResponse(responseCode = "403", description = "Acceso denegado - rol insuficiente",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor",
+                                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/solicitud",
+                    produces = MediaType.APPLICATION_JSON_VALUE,
+                    method = RequestMethod.PUT,
+                    beanClass = SolicitudHandler.class,
+                    beanMethod = "escucharSolicitudesPaginadas",
+                    operation = @Operation(
+                            operationId = "getSolicitudes",
+                            summary = "Obtener solicitudes paginadas",
+                            description = "Obtiene una lista paginada de solicitudes de crédito del usuario autenticado. Permite navegar a través de múltiples páginas de resultados.",
+                            tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    description = "Datos de la solicitud de crédito",
+                                    content = @Content(schema = @Schema(implementation = ActualizarSolicitudDTO.class))
+                            ),
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "Solicitudes obtenidas exitosamente",
                                             content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class))),

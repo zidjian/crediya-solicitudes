@@ -1,7 +1,9 @@
 package co.com.crediya.model.solicitud;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 public class Solicitud {
     private final Long idSolicitud;
@@ -79,5 +81,43 @@ public class Solicitud {
 
     public Long getIdEstado() {
         return idEstado;
+    }
+
+    /**
+     * Calcula la cuota mensual (deuda total mensual) usando la fórmula de anualidad financiera:
+     *   PMT = P * [r (1 + r)^n] / [(1 + r)^n - 1]
+     * donde:
+     *   P = monto del préstamo
+     *   r = tasa de interés mensual (tasa anual / 12 / 100)
+     *   n = número de meses entre la fecha actual y la fecha de plazo
+     *
+     * Casos especiales:
+     * - Si n <= 0, se considera n = 1 para evitar divisiones por cero.
+     * - Si r = 0 (tasa de interés anual = 0), la cuota es P / n.
+     *
+     * @param tasaInteresAnual tasa de interés anual expresada en porcentaje (p.ej. 5.5 para 5.5%)
+     * @return cuota mensual redondeada a 2 decimales
+     */
+    public BigDecimal calcularDeudaTotalMensual(BigDecimal tasaInteresAnual) {
+        long mesesPlazo = ChronoUnit.MONTHS.between(LocalDate.now(), this.plazo);
+        if (mesesPlazo <= 0) {
+            mesesPlazo = 1;
+        }
+
+        BigDecimal tasaInteresMensual = tasaInteresAnual
+                .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP)
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+
+        if (tasaInteresMensual.compareTo(BigDecimal.ZERO) == 0) {
+            return this.monto.divide(BigDecimal.valueOf(mesesPlazo), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal unoPlusTasa = BigDecimal.ONE.add(tasaInteresMensual);
+        BigDecimal unoPlusTasaPotencia = unoPlusTasa.pow((int) mesesPlazo);
+
+        BigDecimal numerador = this.monto.multiply(tasaInteresMensual).multiply(unoPlusTasaPotencia);
+        BigDecimal denominador = unoPlusTasaPotencia.subtract(BigDecimal.ONE);
+
+        return numerador.divide(denominador, 2, RoundingMode.HALF_UP);
     }
 }

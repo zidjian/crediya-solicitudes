@@ -4,11 +4,9 @@ import co.com.crediya.usecase.solicitud.exceptions.BusinessException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -39,29 +37,6 @@ public class AuthorizationService {
                 return jwtService.getRolFromToken(token);
             } catch (Exception e) {
                 log.error("Error validando token: {}", e.getMessage());
-                throw new UnauthorizedException("Token inválido");
-            }
-        });
-    }
-
-    public Mono<Long> extractUserIdFromToken(ServerRequest request) {
-        return Mono.fromCallable(() -> {
-            String authHeader = request.headers().firstHeader("Authorization");
-
-            if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-                throw new UnauthorizedException("Token no proporcionado");
-            }
-
-            String token = authHeader.substring(TOKEN_PREFIX.length());
-
-            try {
-                if (jwtService.isTokenExpired(token)) {
-                    throw new UnauthorizedException("Token expirado");
-                }
-
-                return jwtService.getUserIdFromToken(token);
-            } catch (Exception e) {
-                log.error("Error extrayendo userId del token: {}", e.getMessage());
                 throw new UnauthorizedException("Token inválido");
             }
         });
@@ -110,37 +85,10 @@ public class AuthorizationService {
                 .flatMap(role -> handler.apply(request));
     }
 
-    public Mono<ServerResponse> authorizeOwnershipAndRole(ServerRequest request,
-                                                         List<String> allowedRoles,
-                                                         String documentoIdentidad,
-                                                         java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
-        return validateTokenAndGetRole(request)
-                .zipWith(extractUserIdFromToken(request))
-                .flatMap(tuple -> {
-                    String role = tuple.getT1();
-                    Long userId = tuple.getT2();
-
-                    if (!allowedRoles.contains(role)) {
-                        log.warn("Acceso denegado para rol: {} en ruta: {}", role, request.path());
-                        return Mono.error(new ValidationException("Acceso denegado: rol insuficiente"));
-                    }
-
-                    // Validar que el usuario solo pueda crear solicitudes para su propio documento
-                    return handler.apply(request);
-                })
-                .onErrorMap(BusinessException.class, ex -> ex)
-                .onErrorMap(ResponseStatusException.class, ex -> ex)
-                .onErrorMap(throwable -> {
-                    log.error("Error en validación de ownership: {}", throwable.getMessage());
-                    return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Error interno del servidor");
-                });
-    }
-
     // Crear una excepción de negocio que extienda BusinessException para mejor manejo
     public static class UnauthorizedException extends BusinessException {
         public UnauthorizedException(String message) {
-            super("AUTH_001", message, 401);
+            super("UNAUTHORIZED", message, 401);
         }
     }
 }
