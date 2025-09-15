@@ -28,7 +28,6 @@ public class SQSNotificationAdapter implements NotificationGateway {
         String subject = "Actualización de su Solicitud de Préstamo #" + idSolicitud;
         String body = construirCuerpoMensaje(estado, idSolicitud);
 
-        // Crear JSON manualmente para evitar dependencias de Jackson
         return String.format("""
             {
                 "to": "%s",

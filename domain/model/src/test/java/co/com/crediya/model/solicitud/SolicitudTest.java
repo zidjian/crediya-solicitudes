@@ -7,7 +7,9 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -278,5 +280,120 @@ class SolicitudTest {
         assertEquals(plazo, solicitud.getPlazo());
         assertEquals(idTipoPrestamo, solicitud.getIdTipoPrestamo());
         assertEquals(idEstado, solicitud.getIdEstado());
+    }
+
+    @Test
+    @DisplayName("fromDatabase - Debe crear solicitud desde base de datos con ID")
+    void fromDatabase_ConDatosValidos_DebeCrearSolicitudExitosamente() {
+        // Arrange
+        Long idSolicitud = 123L;
+        String documentoIdentidad = "12345678";
+        String email = "test@example.com";
+        BigDecimal monto = BigDecimal.valueOf(10000);
+        LocalDate plazo = LocalDate.now().plusYears(1);
+        Long idTipoPrestamo = 1L;
+        Long idEstado = 2L;
+
+        // Act
+        Solicitud solicitud = Solicitud.fromDatabase(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+
+        // Assert
+        assertNotNull(solicitud);
+        assertEquals(idSolicitud, solicitud.getIdSolicitud());
+        assertEquals(documentoIdentidad, solicitud.getDocumentoIdentidad());
+        assertEquals(email, solicitud.getEmail());
+        assertEquals(monto, solicitud.getMonto());
+        assertEquals(plazo, solicitud.getPlazo());
+        assertEquals(idTipoPrestamo, solicitud.getIdTipoPrestamo());
+        assertEquals(idEstado, solicitud.getIdEstado());
+    }
+
+    @Test
+    @DisplayName("calcularDeudaTotalMensual - Debe calcular correctamente con tasa de interés positiva")
+    void calcularDeudaTotalMensual_ConTasaInteresPositiva_DebeCalcularCorrectamente() {
+        // Arrange
+        Solicitud solicitud = Solicitud.toSolicitud("123", "test@test.com", BigDecimal.valueOf(12000), LocalDate.now().plusMonths(12), 1L, 1L);
+        BigDecimal tasaInteresAnual = BigDecimal.valueOf(12.0); // 12%
+
+        // Act
+        BigDecimal resultado = solicitud.calcularDeudaTotalMensual(tasaInteresAnual);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.compareTo(BigDecimal.ZERO) > 0);
+        // El resultado debería ser mayor al monto mensual sin intereses (12000/12 = 1000)
+        assertTrue(resultado.compareTo(BigDecimal.valueOf(1000)) > 0);
+    }
+
+    @Test
+    @DisplayName("calcularDeudaTotalMensual - Debe calcular correctamente con tasa de interés cero")
+    void calcularDeudaTotalMensual_ConTasaInteresCero_DebeCalcularCorrectamente() {
+        // Arrange
+        LocalDate fechaActual = LocalDate.now();
+        LocalDate fechaPlazo = fechaActual.plusMonths(12);
+        Solicitud solicitud = Solicitud.toSolicitud("123", "test@test.com", BigDecimal.valueOf(12000), fechaPlazo, 1L, 1L);
+        BigDecimal tasaInteresAnual = BigDecimal.ZERO;
+
+        // Act
+        BigDecimal resultado = solicitud.calcularDeudaTotalMensual(tasaInteresAnual);
+
+        // Assert
+        assertNotNull(resultado);
+        long meses = ChronoUnit.MONTHS.between(fechaActual, fechaPlazo);
+        if (meses <= 0) meses = 1;
+        BigDecimal expected = BigDecimal.valueOf(12000).divide(BigDecimal.valueOf(meses), 2, RoundingMode.HALF_UP);
+        assertEquals(expected, resultado);
+    }
+
+    @Test
+    @DisplayName("calcularDeudaTotalMensual - Debe manejar plazo en el pasado (meses <= 0)")
+    void calcularDeudaTotalMensual_ConPlazoPasado_DebeUsarUnMes() {
+        // Arrange
+        LocalDate fechaPasada = LocalDate.now().minusMonths(2);
+        Solicitud solicitud = Solicitud.toSolicitud("123", "test@test.com", BigDecimal.valueOf(12000), fechaPasada, 1L, 1L);
+        BigDecimal tasaInteresAnual = BigDecimal.valueOf(12.0);
+
+        // Act
+        BigDecimal resultado = solicitud.calcularDeudaTotalMensual(tasaInteresAnual);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.compareTo(BigDecimal.ZERO) > 0);
+        // For past dates, it should use 1 month, so result should be close to the full amount
+        assertTrue(resultado.compareTo(BigDecimal.valueOf(10000)) >= 0);
+    }
+
+    @Test
+    @DisplayName("calcularDeudaTotalMensual - Debe manejar plazo muy cercano (menos de un mes)")
+    void calcularDeudaTotalMensual_ConPlazoMuyCercano_DebeUsarUnMes() {
+        // Arrange
+        LocalDate fechaCercana = LocalDate.now().plusDays(10);
+        Solicitud solicitud = Solicitud.toSolicitud("123", "test@test.com", BigDecimal.valueOf(12000), fechaCercana, 1L, 1L);
+        BigDecimal tasaInteresAnual = BigDecimal.valueOf(12.0);
+
+        // Act
+        BigDecimal resultado = solicitud.calcularDeudaTotalMensual(tasaInteresAnual);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.compareTo(BigDecimal.ZERO) > 0);
+        // For very close dates (0 months), it should use 1 month, so result should be close to the full amount
+        assertTrue(resultado.compareTo(BigDecimal.valueOf(10000)) >= 0);
+    }
+
+    @Test
+    @DisplayName("calcularDeudaTotalMensual - Debe calcular correctamente con plazo de 6 meses")
+    void calcularDeudaTotalMensual_ConPlazo6Meses_DebeCalcularCorrectamente() {
+        // Arrange
+        Solicitud solicitud = Solicitud.toSolicitud("123", "test@test.com", BigDecimal.valueOf(6000), LocalDate.now().plusMonths(6), 1L, 1L);
+        BigDecimal tasaInteresAnual = BigDecimal.valueOf(10.0);
+
+        // Act
+        BigDecimal resultado = solicitud.calcularDeudaTotalMensual(tasaInteresAnual);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.compareTo(BigDecimal.valueOf(1000)) > 0); // Mayor a 6000/6 = 1000
+        assertTrue(resultado.compareTo(BigDecimal.valueOf(1100)) < 0); // Menor a un valor razonable
     }
 }

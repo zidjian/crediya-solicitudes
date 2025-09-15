@@ -21,12 +21,19 @@ public class SolicitudUseCase {
     private final NotificationGateway notificationGateway;
 
     public Mono<Solicitud> crearSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
-        return validarIdTipoPrestamo(idTipoPrestamo)
-                .flatMap(validatedIdTipoPrestamo -> validarTipoPrestamoExiste(validatedIdTipoPrestamo)
-                        .then(validarMontoParaTipoPrestamo(monto, validatedIdTipoPrestamo))
-                        .then(estadoRepository.obtenerIdEstadoPendienteRevision())
-                        .map(idEstadoPendiente -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
-                .flatMap(solicitudRepository::crear);
+        return solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad)
+                .flatMap(existe -> {
+                    if (Boolean.TRUE.equals(existe)) {
+                        return Mono.error(new co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException(
+                                String.format("Ya existe una solicitud para el documento de identidad: %s", documentoIdentidad)));
+                    }
+                    return validarIdTipoPrestamo(idTipoPrestamo)
+                            .flatMap(validatedIdTipoPrestamo -> validarTipoPrestamoExiste(validatedIdTipoPrestamo)
+                                    .then(validarMontoParaTipoPrestamo(monto, validatedIdTipoPrestamo))
+                                    .then(estadoRepository.obtenerIdEstadoPendienteRevision())
+                                    .map(idEstadoPendiente -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
+                            .flatMap(solicitudRepository::crear);
+                });
     }
 
     public Mono<PageResult<Solicitud>> obtenerSolicitudesPaginadas(int page, int size) {
@@ -35,21 +42,21 @@ public class SolicitudUseCase {
 
     public Mono<Solicitud> actualizarSolicitud(Long idSolicitud, Long nuevoIdEstado) {
         return validarIdSolicitud(idSolicitud)
-                .flatMap(validatedIdSolicitud -> validarSolicitudExiste(validatedIdSolicitud)
-                        .then(validarIdEstado(nuevoIdEstado))
-                        .then(validarEstadoExiste(nuevoIdEstado))
-                        .then(solicitudRepository.findById(validatedIdSolicitud))
-                        .map(solicitud -> solicitud.cambiarEstado(nuevoIdEstado))
-                        .flatMap(solicitudRepository::actualizar)
-                        .flatMap(solicitudActualizada ->
-                                // Enviar notificación SQS después de actualizar la solicitud
-                                estadoRepository.findById(nuevoIdEstado)
-                                        .flatMap(estado -> notificationGateway.enviarNotificacionEstadoSolicitud(
-                                                solicitudActualizada.getEmail(),
-                                                estado.getNombre(),
-                                                solicitudActualizada.getIdSolicitud()))
-                                        .then(Mono.just(solicitudActualizada))
-                        ));
+                .flatMap(validatedIdSolicitud -> validarIdEstado(nuevoIdEstado)
+                        .flatMap(validatedIdEstado -> validarSolicitudExiste(validatedIdSolicitud)
+                                .then(validarEstadoExiste(validatedIdEstado))
+                                .then(solicitudRepository.findById(validatedIdSolicitud))
+                                .map(solicitud -> solicitud.cambiarEstado(validatedIdEstado))
+                                .flatMap(solicitudRepository::actualizar)
+                                .flatMap(solicitudActualizada ->
+                                        // Enviar notificación SQS después de actualizar la solicitud
+                                        estadoRepository.findById(validatedIdEstado)
+                                                .flatMap(estado -> notificationGateway.enviarNotificacionEstadoSolicitud(
+                                                        solicitudActualizada.getEmail(),
+                                                        estado.getNombre(),
+                                                        solicitudActualizada.getIdSolicitud()))
+                                                .then(Mono.just(solicitudActualizada))
+                                )));
     }
 
     private Mono<Long> validarIdTipoPrestamo(Long idTipoPrestamo) {
