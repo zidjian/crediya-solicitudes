@@ -2,16 +2,21 @@ package co.com.crediya.usecase.solicitud;
 
 import co.com.crediya.model.common.PageResult;
 import co.com.crediya.model.solicitud.Solicitud;
+import co.com.crediya.model.solicitud.gateways.CapacidadEndeudamientoGateway;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.NotificationGateway;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
+import co.com.crediya.model.usuario.Usuario;
+import co.com.crediya.model.usuario.gateways.UsuarioRepository;
+import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class SolicitudUseCase {
@@ -19,25 +24,26 @@ public class SolicitudUseCase {
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final EstadoRepository estadoRepository;
     private final NotificationGateway notificationGateway;
+    private final CapacidadEndeudamientoGateway capacidadEndeudamientoGateway;
+    private final UsuarioRepository usuarioRepository;
 
-    public Mono<Solicitud> crearSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
-        return solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad)
-                .flatMap(existe -> {
-                    if (Boolean.TRUE.equals(existe)) {
-                        return Mono.error(new co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException(
-                                String.format("Ya existe una solicitud para el documento de identidad: %s", documentoIdentidad)));
-                    }
-                    return validarIdTipoPrestamo(idTipoPrestamo)
+    public Mono<Solicitud> crearSolicitud(String idUser, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
+        return validarIdTipoPrestamo(idTipoPrestamo)
                             .flatMap(validatedIdTipoPrestamo -> validarTipoPrestamoExiste(validatedIdTipoPrestamo)
                                     .then(validarMontoParaTipoPrestamo(monto, validatedIdTipoPrestamo))
                                     .then(estadoRepository.obtenerIdEstadoPendienteRevision())
-                                    .map(idEstadoPendiente -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
-                            .flatMap(solicitudRepository::crear);
-                });
+                                    .map(idEstadoPendiente -> Solicitud.toSolicitud(idUser, email, monto, plazo, validatedIdTipoPrestamo, idEstadoPendiente)))
+                            .flatMap(solicitudRepository::crear)
+                            .flatMap(solicitud -> procesarValidacionAutomatica(solicitud, idTipoPrestamo));
     }
 
     public Mono<PageResult<Solicitud>> obtenerSolicitudesPaginadas(int page, int size) {
         return solicitudRepository.obtenerSolicitudes(page, size);
+    }
+
+    public Mono<List<Solicitud>> obtenerSolicitudesPorIdUsuario(String idUsuario) {
+        return validarIdUsuario(idUsuario)
+                .flatMap(validatedIdUsuario -> solicitudRepository.obtenerSolicitudesPorIdUser(validatedIdUsuario));
     }
 
     public Mono<Solicitud> actualizarSolicitud(Long idSolicitud, Long nuevoIdEstado) {
@@ -119,5 +125,29 @@ public class SolicitudUseCase {
         return estadoRepository.findById(idEstado)
                 .switchIfEmpty(Mono.error(new ValidationException(String.format("No existe un estado con ID: %s", idEstado))))
                 .then();
+    }
+
+    private Mono<String> validarIdUsuario(String idUsuario) {
+        if (idUsuario == null || idUsuario.trim().isEmpty()) {
+            return Mono.error(new ValidationException("El ID del usuario es obligatorio"));
+        }
+        return Mono.just(idUsuario);
+    }
+
+    private Mono<Solicitud> procesarValidacionAutomatica(Solicitud solicitud, Long idTipoPrestamo) {
+        return tipoPrestamoRepository.findById(idTipoPrestamo)
+                .flatMap(tipoPrestamo -> {
+                    if (tipoPrestamo.isValidacionAutomatica()) {
+                        // Fetch user data using document identity from solicitud
+                        return usuarioRepository.obtenerUsuarioPorId(Long.valueOf(solicitud.getIdUser()))
+                                .flatMap(usuario -> solicitudRepository.obtenerSolicitudesPorIdUser(solicitud.getIdUser())
+                                        .flatMap(solicitudes -> capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(usuario, solicitud, solicitudes, solicitud.getIdSolicitud())
+                                                .then(Mono.just(solicitud))))
+                                .defaultIfEmpty(solicitud); // If user not found, continue without sending
+                    } else {
+                        return Mono.just(solicitud);
+                    }
+                })
+                .defaultIfEmpty(solicitud); // If tipoPrestamo not found, continue
     }
 }

@@ -43,7 +43,7 @@ public class JwtService {
         log.info("JwtService inicializado correctamente con clave segura para HS512");
     }
 
-    public String generateToken(Long userId, String email, String nombre, String apellido, String rolNombre, String documentoIdentidad) {
+    public String generateToken(Long userId, String email, String nombre, String apellido, String rolNombre, String idUser) {
         Instant now = Instant.now();
         Instant expiration = now.plus(expirationTimeInHours, ChronoUnit.HOURS);
 
@@ -53,7 +53,7 @@ public class JwtService {
                 .claim("nombre", nombre)
                 .claim("apellido", apellido)
                 .claim("rol", rolNombre)
-                .claim("documentoIdentidad", documentoIdentidad)
+                .claim("idUser", idUser)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(secretKey)
@@ -85,8 +85,8 @@ public class JwtService {
         return validateToken(token).get("rol", String.class);
     }
 
-    public String getDocumentoIdentidadFromToken(String token) {
-        return validateToken(token).get("documentoIdentidad", String.class);
+    public String getIdUserFromToken(String token) {
+        return validateToken(token).get("idUser", String.class);
     }
 
     public boolean isTokenExpired(String token) {

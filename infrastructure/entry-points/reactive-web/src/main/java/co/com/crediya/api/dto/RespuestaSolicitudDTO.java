@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public record RespuestaSolicitudDTO(
         Long id,
-        String documentoIdentidad,
+        String idUser,
         String email,
         BigDecimal monto,
         @JsonFormat(pattern = "yyyy-MM-dd")

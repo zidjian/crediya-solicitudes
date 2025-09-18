@@ -13,7 +13,7 @@ public class SolicitudEntityMapper {
                 solicitud.getMonto(),
                 solicitud.getPlazo(),
                 solicitud.getEmail(),
-                solicitud.getDocumentoIdentidad(),
+                solicitud.getIdUser(),
                 solicitud.getIdEstado(),
                 solicitud.getIdTipoPrestamo()
         );
@@ -22,7 +22,7 @@ public class SolicitudEntityMapper {
     public Solicitud toDomain(SolicitudEntity entity) {
         return Solicitud.fromDatabase(
                 entity.getIdSolicitud(),
-                entity.getDocumentoIdentidad(),
+                entity.getIdUser(),
                 entity.getEmail(),
                 entity.getMonto(),
                 entity.getPlazo(),

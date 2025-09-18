@@ -45,6 +45,9 @@ public class UsuarioResponseDTO {
     @JsonProperty("idRol")
     private Long idRol;
 
+    @JsonProperty("rol")
+    private String rol;
+
     @JsonProperty("salarioBase")
     private BigDecimal salarioBase;
 

@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
 public record CrearSolicitudDTO(
-        @NotBlank(message = "El documento de identidad es obligatorio")
-        String documentoIdentidad,
+        @NotBlank(message = "El idUser es obligatorio")
+        String idUser,
 
         @NotBlank(message = "El email es obligatorio")
         @Email(message = "El email debe tener un formato válido")

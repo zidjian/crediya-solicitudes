@@ -34,7 +34,7 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
 
     @Override
     public Mono<Solicitud> crear(Solicitud solicitud) {
-        log.debug("[SOLICITUD_ADAPTER] Creando solicitud para documento: {}", solicitud.getDocumentoIdentidad());
+        log.debug("[SOLICITUD_ADAPTER] Creando solicitud para idUser: {}", solicitud.getIdUser());
         SolicitudEntity entity = solicitudEntityMapper.toEntity(solicitud);
         return super.repository.save(entity)
                 .map(solicitudEntityMapper::toDomain)
@@ -43,9 +43,19 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
     }
 
     @Override
-    public Mono<Boolean> existePorDocumentoIdentidad(String documentoIdentidad) {
-        log.debug("[SOLICITUD_ADAPTER] Validando existencia de solicitud para documento: {}", documentoIdentidad);
-        return super.repository.existsByDocumentoIdentidad(documentoIdentidad);
+    public Mono<Boolean> existePorIdUser(String idUser) {
+        log.debug("[SOLICITUD_ADAPTER] Validando existencia de solicitud para idUser: {}", idUser);
+        return super.repository.existsByIdUser(idUser);
+    }
+
+    @Override
+    public Mono<List<Solicitud>> obtenerSolicitudesPorIdUser(String idUser) {
+        log.debug("[SOLICITUD_ADAPTER] Obteniendo solicitudes por idUser: {}", idUser);
+        return super.repository.findAllByIdUser(idUser)
+                .map(solicitudEntityMapper::toDomain)
+                .collectList()
+                .doOnSuccess(solicitudes -> log.debug("[SOLICITUD_ADAPTER] Se encontraron {} solicitudes para idUser: {}",
+                        solicitudes.size(), idUser));
     }
 
     @Override

@@ -8,7 +8,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface SolicitudReactiveRepository extends ReactiveCrudRepository<SolicitudEntity, Long>, ReactiveQueryByExampleExecutor<SolicitudEntity> {
-    Mono<Boolean> existsByDocumentoIdentidad(String documentoIdentidad);
+    Mono<Boolean> existsByIdUser(String idUser);
 
     Flux<SolicitudEntity> findAllByOrderByIdSolicitudDesc(Pageable pageable);
+
+    Flux<SolicitudEntity> findAllByIdUser(String idUser);
 }

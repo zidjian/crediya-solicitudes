@@ -1,14 +1,14 @@
 apply plugin: 'org.springframework.boot'
 
 dependencies {
-	implementation project(':sqs-sender')
-	implementation project(':metrics')
-	implementation 'software.amazon.awssdk:sts'
-	implementation project(':sqs-listener')
-	implementation project(':shared')
-	implementation project(':r2dbc-mysql')
-	implementation project(':http-client')
-	implementation project(':reactive-web')
+    implementation project(':sqs-sender')
+    implementation project(':metrics')
+    implementation 'software.amazon.awssdk:sts'
+    implementation project(':sqs-listener')
+    implementation project(':shared')
+    implementation project(':r2dbc-mysql')
+    implementation project(':http-client')
+    implementation project(':reactive-web')
     implementation project(':model')
     implementation project(':usecase')
     implementation 'org.reactivecommons.utils:object-mapper:0.1.0'

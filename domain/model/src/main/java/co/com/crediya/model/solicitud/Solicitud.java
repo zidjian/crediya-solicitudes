@@ -7,17 +7,17 @@ import java.time.temporal.ChronoUnit;
 
 public class Solicitud {
     private final Long idSolicitud;
-    private final String documentoIdentidad;
+    private final String idUser;
     private final String email;
     private final BigDecimal monto;
     private final LocalDate plazo;
     private final Long idTipoPrestamo;
     private final Long idEstado;
 
-    private Solicitud(Long idSolicitud, String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo,
+    private Solicitud(Long idSolicitud, String idUser, String email, BigDecimal monto, LocalDate plazo,
                       Long idTipoPrestamo, Long idEstado) {
-        if (documentoIdentidad == null || documentoIdentidad.isBlank()) {
-            throw new IllegalArgumentException("El documento de identidad es obligatorio");
+        if (idUser == null || idUser.isBlank()) {
+            throw new IllegalArgumentException("El idUser es obligatorio");
         }
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("El email es obligatorio");
@@ -33,7 +33,7 @@ public class Solicitud {
         }
 
         this.idSolicitud = idSolicitud;
-        this.documentoIdentidad = documentoIdentidad.trim();
+        this.idUser = idUser.trim();
         this.email = email.trim();
         this.monto = monto;
         this.plazo = plazo;
@@ -41,26 +41,31 @@ public class Solicitud {
         this.idEstado = idEstado;
     }
 
-    public static Solicitud toSolicitud(String documentoIdentidad, String email, BigDecimal monto, LocalDate plazo,
+    public static Solicitud toSolicitud(String idUser, String email, BigDecimal monto, LocalDate plazo,
                                         Long idTipoPrestamo, Long idEstado) {
-        return new Solicitud(null, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+        return new Solicitud(null, idUser, email, monto, plazo, idTipoPrestamo, idEstado);
     }
 
-    public static Solicitud fromDatabase(Long idSolicitud, String documentoIdentidad, String email, BigDecimal monto,
+    public static Solicitud fromDatabase(Long idSolicitud, String idUser, String email, BigDecimal monto,
                                         LocalDate plazo, Long idTipoPrestamo, Long idEstado) {
-        return new Solicitud(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+        return new Solicitud(idSolicitud, idUser, email, monto, plazo, idTipoPrestamo, idEstado);
     }
 
     public Solicitud cambiarEstado(Long nuevoIdEstado) {
-        return new Solicitud(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, nuevoIdEstado);
+        return new Solicitud(idSolicitud, idUser, email, monto, plazo, idTipoPrestamo, nuevoIdEstado);
     }
 
     public Long getIdSolicitud() {
         return idSolicitud;
     }
 
+    public String getIdUser() {
+        return idUser;
+    }
+
+    @Deprecated
     public String getDocumentoIdentidad() {
-        return documentoIdentidad;
+        return getIdUser();
     }
 
     public String getEmail() {

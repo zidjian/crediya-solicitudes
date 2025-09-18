@@ -3,10 +3,12 @@ package co.com.crediya.usecase.solicitud;
 import co.com.crediya.model.common.PageResult;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.TipoPrestamo;
+import co.com.crediya.model.solicitud.gateways.CapacidadEndeudamientoGateway;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.NotificationGateway;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
+import co.com.crediya.model.usuario.gateways.UsuarioRepository;
 import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,11 +42,17 @@ class SolicitudUseCaseTest {
     @Mock
     private NotificationGateway notificationGateway;
 
+    @Mock
+    private CapacidadEndeudamientoGateway capacidadEndeudamientoGateway;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
     private SolicitudUseCase solicitudUseCase;
 
     @BeforeEach
     void setUp() {
-        solicitudUseCase = new SolicitudUseCase(solicitudRepository, tipoPrestamoRepository, estadoRepository, notificationGateway);
+        solicitudUseCase = new SolicitudUseCase(solicitudRepository, tipoPrestamoRepository, estadoRepository, notificationGateway, capacidadEndeudamientoGateway, usuarioRepository);
     }
 
     @Test
@@ -71,7 +79,7 @@ class SolicitudUseCaseTest {
                 documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente
         );
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(false));
         when(tipoPrestamoRepository.existeById(idTipoPrestamo))
                 .thenReturn(Mono.just(true));
@@ -101,7 +109,7 @@ class SolicitudUseCaseTest {
         LocalDate plazo = LocalDate.now().plusMonths(12);
         Long idTipoPrestamo = 1L;
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(true));
 
         // Act
@@ -125,7 +133,7 @@ class SolicitudUseCaseTest {
         LocalDate plazo = LocalDate.now().plusMonths(12);
         Long idTipoPrestamo = null;
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(false));
 
         // Act
@@ -159,7 +167,7 @@ class SolicitudUseCaseTest {
                 true
         );
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(false));
         when(tipoPrestamoRepository.existeById(idTipoPrestamo))
                 .thenReturn(Mono.just(true));
@@ -200,7 +208,7 @@ class SolicitudUseCaseTest {
                 true
         );
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(false));
         when(tipoPrestamoRepository.existeById(idTipoPrestamo))
                 .thenReturn(Mono.just(true));
@@ -211,6 +219,49 @@ class SolicitudUseCaseTest {
         when(solicitudRepository.crear(any(Solicitud.class)))
                 .thenReturn(Mono.just(Solicitud.toSolicitud(
                     documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente)));
+        when(usuarioRepository.obtenerUsuarioPorDocumento(documentoIdentidad))
+                .thenReturn(Mono.just(co.com.crediya.model.usuario.Usuario.builder()
+                        .idUsuario(1L)
+                        .nombre("Test")
+                        .apellido("User")
+                        .email("test@example.com")
+                        .documentoIdentidad(documentoIdentidad)
+                        .telefono("123456789")
+                        .idRol(1L)
+                        .rol("administrador")
+                        .salarioBase(new BigDecimal("10000"))
+                        .activo(true)
+                        .build()));
+        when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(co.com.crediya.model.usuario.Usuario.class), any(Solicitud.class), any(List.class), any(Long.class)))
+                .thenReturn(Mono.just("messageId"));
+        when(usuarioRepository.obtenerUsuarioPorDocumento(documentoIdentidad))
+                .thenReturn(Mono.just(co.com.crediya.model.usuario.Usuario.builder()
+                        .idUsuario(1L)
+                        .nombre("Test")
+                        .apellido("User")
+                        .email("test@example.com")
+                        .documentoIdentidad(documentoIdentidad)
+                        .telefono("123456789")
+                        .idRol(1L)
+                        .activo(true)
+                        .build()));
+        when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(co.com.crediya.model.usuario.Usuario.class), any(Solicitud.class), any(List.class), any(Long.class)))
+                .thenReturn(Mono.just("messageId"));
+        when(usuarioRepository.obtenerUsuarioPorId(1L))
+                .thenReturn(Mono.just(co.com.crediya.model.usuario.Usuario.builder()
+                        .idUsuario(1L)
+                        .nombre("Test")
+                        .apellido("User")
+                        .email("test@example.com")
+                        .documentoIdentidad(documentoIdentidad)
+                        .telefono("123456789")
+                        .idRol(1L)
+                        .rol("administrador")
+                        .salarioBase(new BigDecimal("10000"))
+                        .activo(true)
+                        .build()));
+        when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(co.com.crediya.model.usuario.Usuario.class), any(Solicitud.class), any(List.class), any(Long.class)))
+                .thenReturn(Mono.just("messageId"));
 
         // Act
         Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
@@ -245,7 +296,7 @@ class SolicitudUseCaseTest {
                 documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente
         );
 
-        when(solicitudRepository.existePorDocumentoIdentidad(documentoIdentidad))
+        when(solicitudRepository.existePorIdUser(documentoIdentidad))
                 .thenReturn(Mono.just(false));
         when(tipoPrestamoRepository.existeById(idTipoPrestamo))
                 .thenReturn(Mono.just(true));
@@ -255,6 +306,34 @@ class SolicitudUseCaseTest {
                 .thenReturn(Mono.just(idEstadoPendiente));
         when(solicitudRepository.crear(any(Solicitud.class)))
                 .thenReturn(Mono.just(solicitudEsperada));
+        when(usuarioRepository.obtenerUsuarioPorId(1L))
+                .thenReturn(Mono.just(co.com.crediya.model.usuario.Usuario.builder()
+                        .idUsuario(1L)
+                        .nombre("Test")
+                        .apellido("User")
+                        .email("test@example.com")
+                        .documentoIdentidad(documentoIdentidad)
+                        .telefono("123456789")
+                        .idRol(1L)
+                        .rol("administrador")
+                        .salarioBase(new BigDecimal("10000"))
+                        .activo(true)
+                        .build()));
+        when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(co.com.crediya.model.usuario.Usuario.class), any(Solicitud.class), any(List.class), any(Long.class)))
+                .thenReturn(Mono.just("messageId"));
+        when(usuarioRepository.obtenerUsuarioPorId(1L))
+                .thenReturn(Mono.just(co.com.crediya.model.usuario.Usuario.builder()
+                        .idUsuario(1L)
+                        .nombre("Test")
+                        .apellido("User")
+                        .email("test@example.com")
+                        .documentoIdentidad(documentoIdentidad)
+                        .telefono("123456789")
+                        .idRol(1L)
+                        .activo(true)
+                        .build()));
+        when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(co.com.crediya.model.usuario.Usuario.class), any(Solicitud.class), any(List.class), any(Long.class)))
+                .thenReturn(Mono.just("messageId"));
 
         // Act
         Mono<Solicitud> resultado = solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);

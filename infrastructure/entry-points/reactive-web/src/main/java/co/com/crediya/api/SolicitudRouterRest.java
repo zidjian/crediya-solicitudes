@@ -18,6 +18,7 @@ public class SolicitudRouterRest implements SolicitudControllerDocs {
     public RouterFunction<ServerResponse> routerFunction(SolicitudHandler handler) {
         return route(POST("/api/v1/solicitud"), handler::escucharCrearSolicitud)
                 .andRoute(GET("/api/v1/solicitud"), handler::escucharSolicitudesPaginadas)
+                .andRoute(GET("/api/v1/solicitud/user/{idUser}"), handler::escucharSolicitudesPorUsuario)
                 .andRoute(PUT("/api/v1/solicitud"), handler::escucharActualizarSolicitud);
     }
 }

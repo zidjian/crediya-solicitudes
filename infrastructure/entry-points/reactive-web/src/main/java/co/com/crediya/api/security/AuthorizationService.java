@@ -42,7 +42,7 @@ public class AuthorizationService {
         });
     }
 
-    public Mono<String> extractDocumentoIdentidadFromToken(ServerRequest request) {
+    public Mono<String> extractIdUserFromToken(ServerRequest request) {
         return Mono.fromCallable(() -> {
             String authHeader = request.headers().firstHeader("Authorization");
 
@@ -57,9 +57,9 @@ public class AuthorizationService {
                     throw new UnauthorizedException("Token expirado");
                 }
 
-                return jwtService.getDocumentoIdentidadFromToken(token);
+                return jwtService.getIdUserFromToken(token);
             } catch (Exception e) {
-                log.error("Error extrayendo documentoIdentidad del token: {}", e.getMessage());
+                log.error("Error extrayendo idUser del token: {}", e.getMessage());
                 throw new UnauthorizedException("Token inválido");
             }
         });

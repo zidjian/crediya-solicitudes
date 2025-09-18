@@ -20,7 +20,7 @@ class SolicitudTest {
     @DisplayName("toSolicitud - Debe crear solicitud exitosamente con datos válidos")
     void toSolicitud_ConDatosValidos_DebeCrearSolicitudExitosamente() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -28,12 +28,12 @@ class SolicitudTest {
         Long idEstado = 2L;
 
         // Act
-        Solicitud solicitud = Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+        Solicitud solicitud = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstado);
 
         // Assert
         assertNotNull(solicitud);
         assertNull(solicitud.getIdSolicitud()); // Se crea sin ID hasta persistir
-        assertEquals(documentoIdentidad, solicitud.getDocumentoIdentidad());
+        assertEquals(idUser, solicitud.getIdUser());
         assertEquals(email, solicitud.getEmail());
         assertEquals(monto, solicitud.getMonto());
         assertEquals(plazo, solicitud.getPlazo());
@@ -44,8 +44,8 @@ class SolicitudTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   ", "\t", "\n"})
-    @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando documentoIdentidad es nulo o vacío")
-    void constructor_CuandoDocumentoIdentidadEsNuloOVacio_DebeLanzarIllegalArgumentException(String documentoInvalido) {
+    @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando idUser es nulo o vacío")
+    void constructor_CuandoIdUserEsNuloOVacio_DebeLanzarIllegalArgumentException(String idUserInvalido) {
         // Arrange
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
@@ -56,10 +56,10 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoInvalido, email, monto, plazo, idTipoPrestamo, idEstado)
+            () -> Solicitud.toSolicitud(idUserInvalido, email, monto, plazo, idTipoPrestamo, idEstado)
         );
 
-        assertEquals("El documento de identidad es obligatorio", exception.getMessage());
+        assertEquals("El idUser es obligatorio", exception.getMessage());
     }
 
     @ParameterizedTest
@@ -68,7 +68,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando email es nulo o vacío")
     void constructor_CuandoEmailEsNuloOVacio_DebeLanzarIllegalArgumentException(String emailInvalido) {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
         Long idTipoPrestamo = 1L;
@@ -77,7 +77,7 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoIdentidad, emailInvalido, monto, plazo, idTipoPrestamo, idEstado)
+            () -> Solicitud.toSolicitud(idUser, emailInvalido, monto, plazo, idTipoPrestamo, idEstado)
         );
 
         assertEquals("El email es obligatorio", exception.getMessage());
@@ -87,7 +87,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando monto es nulo")
     void constructor_CuandoMontoEsNulo_DebeLanzarIllegalArgumentException() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal montoNulo = null;
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -97,7 +97,7 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoIdentidad, email, montoNulo, plazo, idTipoPrestamo, idEstado)
+            () -> Solicitud.toSolicitud(idUser, email, montoNulo, plazo, idTipoPrestamo, idEstado)
         );
 
         assertEquals("El monto debe ser mayor a cero", exception.getMessage());
@@ -108,7 +108,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando monto es menor o igual a cero")
     void constructor_CuandoMontoEsMenorOIgualACero_DebeLanzarIllegalArgumentException(String montoStr) {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal montoInvalido = new BigDecimal(montoStr);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -118,7 +118,7 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoIdentidad, email, montoInvalido, plazo, idTipoPrestamo, idEstado)
+            () -> Solicitud.toSolicitud(idUser, email, montoInvalido, plazo, idTipoPrestamo, idEstado)
         );
 
         assertEquals("El monto debe ser mayor a cero", exception.getMessage());
@@ -128,7 +128,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando plazo es nulo")
     void constructor_CuandoPlazoEsNulo_DebeLanzarIllegalArgumentException() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazoNulo = null;
@@ -138,7 +138,7 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazoNulo, idTipoPrestamo, idEstado)
+            () -> Solicitud.toSolicitud(idUser, email, monto, plazoNulo, idTipoPrestamo, idEstado)
         );
 
         assertEquals("El plazo es obligatorio", exception.getMessage());
@@ -148,7 +148,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe lanzar IllegalArgumentException cuando idTipoPrestamo es nulo")
     void constructor_CuandoIdTipoPrestamoEsNulo_DebeLanzarIllegalArgumentException() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -158,7 +158,7 @@ class SolicitudTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamoNulo, idEstado)
+            () -> Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamoNulo, idEstado)
         );
 
         assertEquals("El ID del tipo de préstamo es obligatorio", exception.getMessage());
@@ -168,7 +168,7 @@ class SolicitudTest {
     @DisplayName("constructor - Debe permitir idEstado nulo")
     void constructor_ConIdEstadoNulo_DebeCrearSolicitudExitosamente() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -176,7 +176,7 @@ class SolicitudTest {
         Long idEstadoNulo = null;
 
         // Act
-        Solicitud solicitud = Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoNulo);
+        Solicitud solicitud = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstadoNulo);
 
         // Assert
         assertNotNull(solicitud);
@@ -184,10 +184,10 @@ class SolicitudTest {
     }
 
     @Test
-    @DisplayName("constructor - Debe trimear documento de identidad y email")
-    void constructor_ConEspaciosEnDocumentoYEmail_DebeTrimerarValores() {
+    @DisplayName("constructor - Debe trimear idUser y email")
+    void constructor_ConEspaciosEnIdUserYEmail_DebeTrimerarValores() {
         // Arrange
-        String documentoConEspacios = "  12345678  ";
+        String idUserConEspacios = "  12345678  ";
         String emailConEspacios = "  test@example.com  ";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -195,10 +195,10 @@ class SolicitudTest {
         Long idEstado = 2L;
 
         // Act
-        Solicitud solicitud = Solicitud.toSolicitud(documentoConEspacios, emailConEspacios, monto, plazo, idTipoPrestamo, idEstado);
+        Solicitud solicitud = Solicitud.toSolicitud(idUserConEspacios, emailConEspacios, monto, plazo, idTipoPrestamo, idEstado);
 
         // Assert
-        assertEquals("12345678", solicitud.getDocumentoIdentidad());
+        assertEquals("12345678", solicitud.getIdUser());
         assertEquals("test@example.com", solicitud.getEmail());
     }
 
@@ -206,7 +206,7 @@ class SolicitudTest {
     @DisplayName("cambiarEstado - Debe crear nueva instancia con estado cambiado")
     void cambiarEstado_ConNuevoEstado_DebeCrearNuevaInstanciaConEstadoCambiado() {
         // Arrange
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -214,7 +214,7 @@ class SolicitudTest {
         Long idEstadoInicial = 1L;
         Long nuevoIdEstado = 2L;
 
-        Solicitud solicitudOriginal = Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoInicial);
+        Solicitud solicitudOriginal = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstadoInicial);
 
         // Act
         Solicitud solicitudModificada = solicitudOriginal.cambiarEstado(nuevoIdEstado);
@@ -223,7 +223,7 @@ class SolicitudTest {
         assertNotNull(solicitudModificada);
         assertNotSame(solicitudOriginal, solicitudModificada); // Debe ser una nueva instancia
         assertEquals(nuevoIdEstado, solicitudModificada.getIdEstado());
-        assertEquals(solicitudOriginal.getDocumentoIdentidad(), solicitudModificada.getDocumentoIdentidad());
+        assertEquals(solicitudOriginal.getIdUser(), solicitudModificada.getIdUser());
         assertEquals(solicitudOriginal.getEmail(), solicitudModificada.getEmail());
         assertEquals(solicitudOriginal.getMonto(), solicitudModificada.getMonto());
         assertEquals(solicitudOriginal.getPlazo(), solicitudModificada.getPlazo());
@@ -237,7 +237,7 @@ class SolicitudTest {
     @DisplayName("getters - Deben retornar valores correctos")
     void getters_DebenRetornarValoresCorrectos() {
         // Arrange
-        String expectedDocumento = "87654321";
+        String expectedIdUser = "87654321";
         String expectedEmail = "usuario@test.com";
         BigDecimal expectedMonto = BigDecimal.valueOf(25000);
         LocalDate expectedPlazo = LocalDate.of(2025, 12, 31);
@@ -245,11 +245,11 @@ class SolicitudTest {
         Long expectedIdEstado = 1L;
 
         Solicitud solicitud = Solicitud.toSolicitud(
-            expectedDocumento, expectedEmail, expectedMonto, expectedPlazo, expectedIdTipoPrestamo, expectedIdEstado
+            expectedIdUser, expectedEmail, expectedMonto, expectedPlazo, expectedIdTipoPrestamo, expectedIdEstado
         );
 
         // Act & Assert
-        assertEquals(expectedDocumento, solicitud.getDocumentoIdentidad());
+        assertEquals(expectedIdUser, solicitud.getIdUser());
         assertEquals(expectedEmail, solicitud.getEmail());
         assertEquals(expectedMonto, solicitud.getMonto());
         assertEquals(expectedPlazo, solicitud.getPlazo());
@@ -262,7 +262,7 @@ class SolicitudTest {
     @DisplayName("toSolicitud - Debe crear solicitud con valores extremos válidos")
     void toSolicitud_ConValoresExtremosValidos_DebeCrearSolicitudExitosamente() {
         // Arrange
-        String documentoIdentidad = "1"; // Mínimo válido
+        String idUser = "1"; // Mínimo válido
         String email = "a@b.c"; // Mínimo válido
         BigDecimal monto = new BigDecimal("0.01"); // Mínimo positivo
         LocalDate plazo = LocalDate.MIN; // Fecha mínima
@@ -270,11 +270,11 @@ class SolicitudTest {
         Long idEstado = 1L;
 
         // Act
-        Solicitud solicitud = Solicitud.toSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+        Solicitud solicitud = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstado);
 
         // Assert
         assertNotNull(solicitud);
-        assertEquals(documentoIdentidad, solicitud.getDocumentoIdentidad());
+        assertEquals(idUser, solicitud.getIdUser());
         assertEquals(email, solicitud.getEmail());
         assertEquals(monto, solicitud.getMonto());
         assertEquals(plazo, solicitud.getPlazo());
@@ -287,7 +287,7 @@ class SolicitudTest {
     void fromDatabase_ConDatosValidos_DebeCrearSolicitudExitosamente() {
         // Arrange
         Long idSolicitud = 123L;
-        String documentoIdentidad = "12345678";
+        String idUser = "12345678";
         String email = "test@example.com";
         BigDecimal monto = BigDecimal.valueOf(10000);
         LocalDate plazo = LocalDate.now().plusYears(1);
@@ -295,12 +295,12 @@ class SolicitudTest {
         Long idEstado = 2L;
 
         // Act
-        Solicitud solicitud = Solicitud.fromDatabase(idSolicitud, documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstado);
+        Solicitud solicitud = Solicitud.fromDatabase(idSolicitud, idUser, email, monto, plazo, idTipoPrestamo, idEstado);
 
         // Assert
         assertNotNull(solicitud);
         assertEquals(idSolicitud, solicitud.getIdSolicitud());
-        assertEquals(documentoIdentidad, solicitud.getDocumentoIdentidad());
+        assertEquals(idUser, solicitud.getIdUser());
         assertEquals(email, solicitud.getEmail());
         assertEquals(monto, solicitud.getMonto());
         assertEquals(plazo, solicitud.getPlazo());

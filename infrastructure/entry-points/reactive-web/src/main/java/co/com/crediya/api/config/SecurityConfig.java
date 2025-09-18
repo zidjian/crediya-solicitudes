@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/solicitud").hasAnyRole("cliente", "administrador")
                         .pathMatchers(HttpMethod.GET, "/api/v1/solicitud").hasAnyRole("asesor", "administrador")
                         .pathMatchers(HttpMethod.PUT, "/api/v1/solicitud").hasAnyRole("asesor")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitud/user/{idUser}").hasAnyRole("servicios")
                         .anyExchange().authenticated()
                 )
                 .build();

@@ -4,6 +4,7 @@ import co.com.crediya.api.dto.ActualizarSolicitudDTO;
 import co.com.crediya.api.dto.CrearSolicitudDTO;
 import co.com.crediya.api.dto.PaginatedResponseDTO;
 import co.com.crediya.api.dto.RespuestaSolicitudDTO;
+import co.com.crediya.model.usuario.Usuario;
 import co.com.crediya.api.mapper.SolicitudDTOMapper;
 import co.com.crediya.api.security.AuthorizationService;
 import co.com.crediya.usecase.solicitud.SolicitudUseCase;
@@ -23,6 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -43,24 +45,24 @@ public class SolicitudHandler {
                         return Mono.error(new ConstraintViolationException(violaciones));
                     }
 
-                    // Validar que el documento del token coincida con el de la petición
-                    return validateDocumentoOwnership(serverRequest, dto.documentoIdentidad()).then(Mono.just(dto));
+                    // Validar que el idUser del token coincida con el de la petición
+                    return validateDocumentoOwnership(serverRequest, dto.idUser()).then(Mono.just(dto));
                 })
-                .flatMap(dto -> solicitudUseCase.crearSolicitud(dto.documentoIdentidad(), dto.email(), dto.monto(), LocalDate.parse(dto.plazo()), dto.idTipoPrestamo()))
-                .doOnSuccess(solicitud -> log.info("[CREAR_SOLICITUD] Solicitud creada exitosamente con ID: {} para documento: {}", solicitud.getIdSolicitud(), solicitud.getDocumentoIdentidad()))
+                .flatMap(dto -> solicitudUseCase.crearSolicitud(dto.idUser(), dto.email(), dto.monto(), LocalDate.parse(dto.plazo()), dto.idTipoPrestamo()))
+                .doOnSuccess(solicitud -> log.info("[CREAR_SOLICITUD] Solicitud creada exitosamente con ID: {} para idUser: {}", solicitud.getIdSolicitud(), solicitud.getIdUser()))
                 .flatMap(solicitudCreada -> ServerResponse.status(HttpStatus.CREATED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(mapper.toResponse(solicitudCreada), RespuestaSolicitudDTO.class))
                 .doOnError(ex -> log.error("[CREAR_SOLICITUD] Error procesando solicitud: {}", ex.getMessage()));
     }
 
-    private Mono<Void> validateDocumentoOwnership(ServerRequest request, String documentoIdentidadPeticion) {
-        return authorizationService.extractDocumentoIdentidadFromToken(request).flatMap(documentoIdentidadToken -> {
-            if (!documentoIdentidadToken.equals(documentoIdentidadPeticion)) {
-                log.warn("[CREAR_SOLICITUD] Documento en token {} no coincide con documento en petición {}", documentoIdentidadToken, documentoIdentidadPeticion);
+    private Mono<Void> validateDocumentoOwnership(ServerRequest request, String idUserPeticion) {
+        return authorizationService.extractIdUserFromToken(request).flatMap(idUserToken -> {
+            if (!idUserToken.equals(idUserPeticion)) {
+                log.warn("[CREAR_SOLICITUD] idUser en token {} no coincide con idUser en petición {}", idUserToken, idUserPeticion);
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "No puede crear solicitudes para otros usuarios"));
             }
-            log.info("[CREAR_SOLICITUD] Validación de documento exitosa: token={}, petición={}", documentoIdentidadToken, documentoIdentidadPeticion);
+            log.info("[CREAR_SOLICITUD] Validación de idUser exitosa: token={}, petición={}", idUserToken, idUserPeticion);
             return Mono.empty();
         });
     }
@@ -100,6 +102,30 @@ public class SolicitudHandler {
                         return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(paginatedResponse);
                     })
         ).doOnError(ex -> log.error("[GET_SOLICITUDES_PAGINADAS] Error consultando solicitudes: {}", ex.getMessage()));
+    }
+
+    public Mono<ServerResponse> escucharSolicitudesPorUsuario(ServerRequest serverRequest) {
+        return Mono.fromCallable(() -> {
+            String idUsuario = serverRequest.pathVariable("idUser");
+            if (idUsuario == null || idUsuario.trim().isEmpty()) {
+                log.warn("[GET_SOLICITUDES_POR_USUARIO] ID de usuario vacío o nulo");
+                throw new ValidationException("El ID del usuario es obligatorio");
+            }
+            log.info("[GET_SOLICITUDES_POR_USUARIO] Consultando solicitudes para usuario ID: {}", idUsuario);
+            return idUsuario;
+        })
+        .doOnSubscribe(sub -> log.info("[GET_SOLICITUDES_POR_USUARIO] Petición recibida"))
+        .flatMap(idUsuario -> solicitudUseCase.obtenerSolicitudesPorIdUsuario(idUsuario))
+        .doOnSuccess(solicitudes -> log.info("[GET_SOLICITUDES_POR_USUARIO] Se encontraron {} solicitudes", solicitudes.size()))
+        .flatMap(solicitudes ->
+            // Convertir cada Solicitud a RespuestaSolicitudDTO resolviendo los Mono devueltos por el mapper
+            Flux.fromIterable(solicitudes)
+                    .flatMap(mapper::toResponse) // mapper.toResponse devuelve Mono<RespuestaSolicitudDTO>
+                    .collectList()
+                    .flatMap(solicitudesDTO -> ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(solicitudesDTO))
+        ).doOnError(ex -> log.error("[GET_SOLICITUDES_POR_USUARIO] Error consultando solicitudes por usuario: {}", ex.getMessage()));
     }
 
     public Mono<ServerResponse> escucharActualizarSolicitud(ServerRequest serverRequest) {

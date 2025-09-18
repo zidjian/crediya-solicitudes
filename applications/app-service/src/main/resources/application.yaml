@@ -29,3 +29,12 @@ adapter:
     region: "us-east-1"
     queueUrl: "https://sqs.us-east-1.amazonaws.com/920004595108/cola-notificaciones"
     endpoint: "https://sqs.us-east-1.amazonaws.com/920004595108/cola-notificaciones"
+entrypoint:
+  sqs:
+    region: "us-east-1"
+    endpoint: "https://sqs.us-east-1.amazonaws.com/920004595108/repuesta-capacidad-endeudamiento.fifo"
+    queueUrl: "https://sqs.us-east-1.amazonaws.com/920004595108/repuesta-capacidad-endeudamiento.fifo"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1

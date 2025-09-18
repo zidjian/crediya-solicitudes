@@ -26,8 +26,8 @@ public class SolicitudEntity {
 
     private String email;
 
-    @Column("documento_identidad")
-    private String documentoIdentidad;
+    @Column("id_user")
+    private String idUser;
 
     @Column("id_estado")
     private Long idEstado;

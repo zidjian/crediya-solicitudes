@@ -30,7 +30,7 @@ public class SolicitudDTOMapper {
 
             return new RespuestaSolicitudDTO(
                     solicitud.getIdSolicitud(),
-                    solicitud.getDocumentoIdentidad(),
+                    solicitud.getIdUser(),
                     solicitud.getEmail(),
                     solicitud.getMonto(),
                     solicitud.getPlazo(),
