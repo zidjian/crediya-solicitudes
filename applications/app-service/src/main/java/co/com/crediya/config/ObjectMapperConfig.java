@@ -11,20 +11,20 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class ObjectMapperConfig {
 
-    // Bean para crear una implementación perzonalizada de ObjectMapper
-    @Bean
-    public org.reactivecommons.utils.ObjectMapper objectMapper() {
-        return new ObjectMapperImp();
-    }
+  // Bean para crear una implementación perzonalizada de ObjectMapper
+  @Bean
+  public org.reactivecommons.utils.ObjectMapper objectMapper() {
+    return new ObjectMapperImp();
+  }
 
-    // Configuración para que falle al encontrar propiedades desconocidas en JSON
-    @Bean
-    @Primary
-    public ObjectMapper jacksonObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        mapper.registerModule(new JavaTimeModule());
+  // Configuración para que falle al encontrar propiedades desconocidas en JSON
+  @Bean
+  @Primary
+  public ObjectMapper jacksonObjectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+    mapper.registerModule(new JavaTimeModule());
 
-        return mapper;
-    }
+    return mapper;
+  }
 }

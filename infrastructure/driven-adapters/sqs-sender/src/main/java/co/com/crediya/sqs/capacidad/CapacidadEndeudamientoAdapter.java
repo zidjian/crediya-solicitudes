@@ -20,32 +20,54 @@ import java.util.List;
 @Slf4j
 public class CapacidadEndeudamientoAdapter implements CapacidadEndeudamientoGateway {
 
-    private final SQSSender sqsSender;
-    private final SolicitudRepository solicitudRepository;
-    private final TipoPrestamoRepository tipoPrestamoRepository;
-    private final EstadoRepository estadoRepository;
+  private final SQSSender sqsSender;
+  private final SolicitudRepository solicitudRepository;
+  private final TipoPrestamoRepository tipoPrestamoRepository;
+  private final EstadoRepository estadoRepository;
 
-    @Override
-    public Mono<String> enviarSolicitudCapacidadEndeudamiento(Usuario usuario, Solicitud solicitud, List<Solicitud> solicitudes, Long idSolicitudActual) {
-        return crearMensajeCapacidadEndeudamientoReactive(usuario, solicitudes, idSolicitudActual)
-                .doOnNext(mensaje -> log.info("[SQS_CAPACIDAD] Enviando solicitud de capacidad de endeudamiento para usuario: {} y solicitud ID: {}",
-                    usuario.getDocumentoIdentidad(), idSolicitudActual))
-                .flatMap(mensaje -> sqsSender.send(mensaje, "https://sqs.us-east-1.amazonaws.com/920004595108/cola-capacidad-endeudamiento.fifo"))
-                .doOnSuccess(messageId -> log.info("[SQS_CAPACIDAD] Solicitud enviada exitosamente. MessageId: {} para solicitud ID: {}",
-                    messageId, idSolicitudActual))
-                .doOnError(ex -> log.error("[SQS_CAPACIDAD] Error enviando solicitud para ID: {} - {}",
-                    idSolicitudActual, ex.getMessage()));
-    }
+  @Override
+  public Mono<String> enviarSolicitudCapacidadEndeudamiento(
+      Usuario usuario, Solicitud solicitud, List<Solicitud> solicitudes, Long idSolicitudActual) {
+    return crearMensajeCapacidadEndeudamientoReactive(usuario, solicitudes, idSolicitudActual)
+        .doOnNext(
+            mensaje ->
+                log.info(
+                    "[SQS_CAPACIDAD] Enviando solicitud de capacidad de endeudamiento para usuario: {} y solicitud ID: {}",
+                    usuario.getDocumentoIdentidad(),
+                    idSolicitudActual))
+        .flatMap(
+            mensaje ->
+                sqsSender.send(
+                    mensaje,
+                    "https://sqs.us-east-1.amazonaws.com/920004595108/cola-capacidad-endeudamiento.fifo"))
+        .doOnSuccess(
+            messageId ->
+                log.info(
+                    "[SQS_CAPACIDAD] Solicitud enviada exitosamente. MessageId: {} para solicitud ID: {}",
+                    messageId,
+                    idSolicitudActual))
+        .doOnError(
+            ex ->
+                log.error(
+                    "[SQS_CAPACIDAD] Error enviando solicitud para ID: {} - {}",
+                    idSolicitudActual,
+                    ex.getMessage()));
+  }
 
-    private Mono<String> crearMensajeCapacidadEndeudamientoReactive(Usuario usuario, List<Solicitud> solicitudes, Long idSolicitudActual) {
-        return Flux.fromIterable(solicitudes)
-                .flatMap(solicitud -> Mono.zip(
+  private Mono<String> crearMensajeCapacidadEndeudamientoReactive(
+      Usuario usuario, List<Solicitud> solicitudes, Long idSolicitudActual) {
+    return Flux.fromIterable(solicitudes)
+        .flatMap(
+            solicitud ->
+                Mono.zip(
                         tipoPrestamoRepository.findById(solicitud.getIdTipoPrestamo()),
-                        estadoRepository.findById(solicitud.getIdEstado())
-                ).map(tuple -> {
-                    TipoPrestamo tipoPrestamo = tuple.getT1();
-                    Estado estado = tuple.getT2();
-                    return String.format("""
+                        estadoRepository.findById(solicitud.getIdEstado()))
+                    .map(
+                        tuple -> {
+                          TipoPrestamo tipoPrestamo = tuple.getT1();
+                          Estado estado = tuple.getT2();
+                          return String.format(
+                              """
                         {
                             "id": %d,
                             "idUser": "%s",
@@ -57,29 +79,32 @@ public class CapacidadEndeudamientoAdapter implements CapacidadEndeudamientoGate
                             "tasaInteres": %.2f,
                             "deudaTotalMensual": %.2f
                         }""",
-                        solicitud.getIdSolicitud(),
-                        escapeJson(solicitud.getIdUser()),
-                        escapeJson(solicitud.getEmail()),
-                        solicitud.getMonto().doubleValue(),
-                        solicitud.getPlazo().toString(),
-                        escapeJson(tipoPrestamo.getNombre()),
-                        escapeJson(estado.getNombre()),
-                        tipoPrestamo.getTasaInteres().doubleValue(),
-                        solicitud.calcularDeudaTotalMensual(tipoPrestamo.getTasaInteres()).doubleValue()
-                    );
-                }))
-                .collectList()
-                .map(solicitudesJsonList -> {
-                    StringBuilder solicitudesJson = new StringBuilder("[");
-                    for (int i = 0; i < solicitudesJsonList.size(); i++) {
-                        solicitudesJson.append(solicitudesJsonList.get(i));
-                        if (i < solicitudesJsonList.size() - 1) {
-                            solicitudesJson.append(",");
-                        }
-                    }
-                    solicitudesJson.append("]");
+                              solicitud.getIdSolicitud(),
+                              escapeJson(solicitud.getIdUser()),
+                              escapeJson(solicitud.getEmail()),
+                              solicitud.getMonto().doubleValue(),
+                              solicitud.getPlazo().toString(),
+                              escapeJson(tipoPrestamo.getNombre()),
+                              escapeJson(estado.getNombre()),
+                              tipoPrestamo.getTasaInteres().doubleValue(),
+                              solicitud
+                                  .calcularDeudaTotalMensual(tipoPrestamo.getTasaInteres())
+                                  .doubleValue());
+                        }))
+        .collectList()
+        .map(
+            solicitudesJsonList -> {
+              StringBuilder solicitudesJson = new StringBuilder("[");
+              for (int i = 0; i < solicitudesJsonList.size(); i++) {
+                solicitudesJson.append(solicitudesJsonList.get(i));
+                if (i < solicitudesJsonList.size() - 1) {
+                  solicitudesJson.append(",");
+                }
+              }
+              solicitudesJson.append("]");
 
-                    return String.format("""
+              return String.format(
+                  """
                         {
                             "datosUsuario": {
                                 "idUsuario": %d,
@@ -95,26 +120,26 @@ public class CapacidadEndeudamientoAdapter implements CapacidadEndeudamientoGate
                             "idSolicitud": %d
                         }
                         """,
-                        usuario.getIdUsuario(),
-                        escapeJson(usuario.getNombre()),
-                        escapeJson(usuario.getApellido()),
-                        escapeJson(usuario.getEmail()),
-                        escapeJson(usuario.getDocumentoIdentidad()),
-                        escapeJson(usuario.getTelefono()),
-                        escapeJson(usuario.getRol()),
-                        usuario.getSalarioBase() != null ? usuario.getSalarioBase().doubleValue() : 0.0,
-                        solicitudesJson.toString(),
-                        idSolicitudActual
-                    );
-                });
-    }
+                  usuario.getIdUsuario(),
+                  escapeJson(usuario.getNombre()),
+                  escapeJson(usuario.getApellido()),
+                  escapeJson(usuario.getEmail()),
+                  escapeJson(usuario.getDocumentoIdentidad()),
+                  escapeJson(usuario.getTelefono()),
+                  escapeJson(usuario.getRol()),
+                  usuario.getSalarioBase() != null ? usuario.getSalarioBase().doubleValue() : 0.0,
+                  solicitudesJson.toString(),
+                  idSolicitudActual);
+            });
+  }
 
-    private String escapeJson(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t");
-    }
+  private String escapeJson(String value) {
+    if (value == null) return "";
+    return value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t");
+  }
 }

@@ -10,25 +10,20 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-        info = @Info(
-                title = "Crediya API",
-                version = "v1",
-                description = "API para gestión de solicitudes de crédito"
-        )
-)
+    info =
+        @Info(
+            title = "Crediya API",
+            version = "v1",
+            description = "API para gestión de solicitudes de crédito"))
 @SecurityScheme(
-        name = "bearerAuth",
-        type = SecuritySchemeType.HTTP,
-        bearerFormat = "JWT",
-        scheme = "bearer"
-)
+    name = "bearerAuth",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    scheme = "bearer")
 public class SwaggerConfig {
 
-    @Bean
-    public GroupedOpenApi publicApi() {
-        return GroupedOpenApi.builder()
-                .group("api-solicitud")
-                .pathsToMatch("/api/**")
-                .build();
-    }
+  @Bean
+  public GroupedOpenApi publicApi() {
+    return GroupedOpenApi.builder().group("api-solicitud").pathsToMatch("/api/**").build();
+  }
 }

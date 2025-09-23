@@ -7,18 +7,14 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface EstadoEntityMapper {
 
-    Estado toDomain(EstadoEntity entity);
+  Estado toDomain(EstadoEntity entity);
 
-    EstadoEntity toEntity(Estado domain);
+  EstadoEntity toEntity(Estado domain);
 
-    default Estado toDomain(EstadoEntity entity, Estado domain) {
-        if (entity == null) {
-            return null;
-        }
-        return Estado.toEstado(
-                entity.getIdEstado(),
-                entity.getNombre(),
-                entity.getDescripcion()
-        );
+  default Estado toDomain(EstadoEntity entity, Estado domain) {
+    if (entity == null) {
+      return null;
     }
+    return Estado.toEstado(entity.getIdEstado(), entity.getNombre(), entity.getDescripcion());
+  }
 }

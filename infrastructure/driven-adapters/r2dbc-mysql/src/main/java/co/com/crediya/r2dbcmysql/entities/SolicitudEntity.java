@@ -16,22 +16,22 @@ import java.time.LocalDate;
 @Builder
 public class SolicitudEntity {
 
-    @Id
-    @Column("id_solicitud")
-    private Long idSolicitud;
+  @Id
+  @Column("id_solicitud")
+  private Long idSolicitud;
 
-    private BigDecimal monto;
+  private BigDecimal monto;
 
-    private LocalDate plazo;
+  private LocalDate plazo;
 
-    private String email;
+  private String email;
 
-    @Column("id_user")
-    private String idUser;
+  @Column("id_user")
+  private String idUser;
 
-    @Column("id_estado")
-    private Long idEstado;
+  @Column("id_estado")
+  private Long idEstado;
 
-    @Column("id_tipo_prestamo")
-    private Long idTipoPrestamo;
+  @Column("id_tipo_prestamo")
+  private Long idTipoPrestamo;
 }

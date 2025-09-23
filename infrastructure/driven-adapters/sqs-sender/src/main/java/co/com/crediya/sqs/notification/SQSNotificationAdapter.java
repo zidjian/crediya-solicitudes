@@ -10,48 +10,62 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class SQSNotificationAdapter implements NotificationGateway {
 
-    private final SQSSender sqsSender;
+  private final SQSSender sqsSender;
 
-    @Override
-    public Mono<String> enviarNotificacionEstadoSolicitud(String email, String estado, Long idSolicitud) {
-        return Mono.fromCallable(() -> crearMensajeNotificacion(email, estado, idSolicitud))
-                .doOnNext(mensaje -> log.info("[SQS_NOTIFICATION] Enviando notificación para solicitud ID: {} a email: {} con estado: {}",
-                    idSolicitud, email, estado))
-                .flatMap(sqsSender::send)
-                .doOnSuccess(messageId -> log.info("[SQS_NOTIFICATION] Notificación enviada exitosamente. MessageId: {} para solicitud ID: {}",
-                    messageId, idSolicitud))
-                .doOnError(ex -> log.error("[SQS_NOTIFICATION] Error enviando notificación para solicitud ID: {} - {}",
-                    idSolicitud, ex.getMessage()));
-    }
+  @Override
+  public Mono<String> enviarNotificacionEstadoSolicitud(
+      String email, String estado, Long idSolicitud) {
+    return Mono.fromCallable(() -> crearMensajeNotificacion(email, estado, idSolicitud))
+        .doOnNext(
+            mensaje ->
+                log.info(
+                    "[SQS_NOTIFICATION] Enviando notificación para solicitud ID: {} a email: {} con estado: {}",
+                    idSolicitud,
+                    email,
+                    estado))
+        .flatMap(sqsSender::send)
+        .doOnSuccess(
+            messageId ->
+                log.info(
+                    "[SQS_NOTIFICATION] Notificación enviada exitosamente. MessageId: {} para solicitud ID: {}",
+                    messageId,
+                    idSolicitud))
+        .doOnError(
+            ex ->
+                log.error(
+                    "[SQS_NOTIFICATION] Error enviando notificación para solicitud ID: {} - {}",
+                    idSolicitud,
+                    ex.getMessage()));
+  }
 
-    private String crearMensajeNotificacion(String email, String estado, Long idSolicitud) {
-        String subject = "Actualización de su Solicitud de Préstamo #" + idSolicitud;
-        String body = construirCuerpoMensaje(estado, idSolicitud);
+  private String crearMensajeNotificacion(String email, String estado, Long idSolicitud) {
+    String subject = "Actualización de su Solicitud de Préstamo #" + idSolicitud;
+    String body = construirCuerpoMensaje(estado, idSolicitud);
 
-        return String.format("""
+    return String.format(
+        """
             {
                 "to": "%s",
                 "subject": "%s",
                 "body": "%s"
             }
             """,
-            escapeJson(email),
-            escapeJson(subject),
-            escapeJson(body)
-        );
-    }
+        escapeJson(email), escapeJson(subject), escapeJson(body));
+  }
 
-    private String escapeJson(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t");
-    }
+  private String escapeJson(String value) {
+    if (value == null) return "";
+    return value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t");
+  }
 
-    private String construirCuerpoMensaje(String estado, Long idSolicitud) {
-        return String.format("""
+  private String construirCuerpoMensaje(String estado, Long idSolicitud) {
+    return String.format(
+        """
             <html>
             <body>
                 <h2>Estimado solicitante,</h2>
@@ -64,6 +78,7 @@ public class SQSNotificationAdapter implements NotificationGateway {
                 Equipo Crediya</p>
             </body>
             </html>
-            """, idSolicitud, estado);
-    }
+            """,
+        idSolicitud, estado);
+  }
 }

@@ -16,79 +16,84 @@ import java.util.List;
 @Slf4j
 public class AuthorizationService {
 
-    private final JwtService jwtService;
-    private static final String TOKEN_PREFIX = "Bearer ";
+  private final JwtService jwtService;
+  private static final String TOKEN_PREFIX = "Bearer ";
 
-    public Mono<String> validateTokenAndGetRole(ServerRequest request) {
-        return Mono.fromCallable(() -> {
-            String authHeader = request.headers().firstHeader("Authorization");
+  public Mono<String> validateTokenAndGetRole(ServerRequest request) {
+    return Mono.fromCallable(
+        () -> {
+          String authHeader = request.headers().firstHeader("Authorization");
 
-            if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-                throw new UnauthorizedException("Token no proporcionado");
+          if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
+            throw new UnauthorizedException("Token no proporcionado");
+          }
+
+          String token = authHeader.substring(TOKEN_PREFIX.length());
+
+          try {
+            if (jwtService.isTokenExpired(token)) {
+              throw new UnauthorizedException("Token expirado");
             }
 
-            String token = authHeader.substring(TOKEN_PREFIX.length());
-
-            try {
-                if (jwtService.isTokenExpired(token)) {
-                    throw new UnauthorizedException("Token expirado");
-                }
-
-                return jwtService.getRolFromToken(token);
-            } catch (Exception e) {
-                log.error("Error validando token: {}", e.getMessage());
-                throw new UnauthorizedException("Token inválido");
-            }
+            return jwtService.getRolFromToken(token);
+          } catch (Exception e) {
+            log.error("Error validando token: {}", e.getMessage());
+            throw new UnauthorizedException("Token inválido");
+          }
         });
-    }
+  }
 
-    public Mono<String> extractIdUserFromToken(ServerRequest request) {
-        return Mono.fromCallable(() -> {
-            String authHeader = request.headers().firstHeader("Authorization");
+  public Mono<String> extractIdUserFromToken(ServerRequest request) {
+    return Mono.fromCallable(
+        () -> {
+          String authHeader = request.headers().firstHeader("Authorization");
 
-            if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-                throw new UnauthorizedException("Token no proporcionado");
+          if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
+            throw new UnauthorizedException("Token no proporcionado");
+          }
+
+          String token = authHeader.substring(TOKEN_PREFIX.length());
+
+          try {
+            if (jwtService.isTokenExpired(token)) {
+              throw new UnauthorizedException("Token expirado");
             }
 
-            String token = authHeader.substring(TOKEN_PREFIX.length());
-
-            try {
-                if (jwtService.isTokenExpired(token)) {
-                    throw new UnauthorizedException("Token expirado");
-                }
-
-                return jwtService.getIdUserFromToken(token);
-            } catch (Exception e) {
-                log.error("Error extrayendo idUser del token: {}", e.getMessage());
-                throw new UnauthorizedException("Token inválido");
-            }
+            return jwtService.getIdUserFromToken(token);
+          } catch (Exception e) {
+            log.error("Error extrayendo idUser del token: {}", e.getMessage());
+            throw new UnauthorizedException("Token inválido");
+          }
         });
-    }
+  }
 
-    public Mono<ServerResponse> authorizeRoles(ServerRequest request, List<String> allowedRoles,
-                                               java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
-        return validateTokenAndGetRole(request)
-                .flatMap(role -> {
-                    if (allowedRoles.contains(role)) {
-                        return handler.apply(request);
-                    } else {
-                        log.warn("Acceso denegado para rol: {} en ruta: {}", role, request.path());
-                        // Lanzar excepción para que sea manejada por GlobalErrorHandler
-                        throw new ValidationException("Acceso denegado: rol insuficiente");
-                    }
-                });
-    }
+  public Mono<ServerResponse> authorizeRoles(
+      ServerRequest request,
+      List<String> allowedRoles,
+      java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
+    return validateTokenAndGetRole(request)
+        .flatMap(
+            role -> {
+              if (allowedRoles.contains(role)) {
+                return handler.apply(request);
+              } else {
+                log.warn("Acceso denegado para rol: {} en ruta: {}", role, request.path());
+                // Lanzar excepción para que sea manejada por GlobalErrorHandler
+                throw new ValidationException("Acceso denegado: rol insuficiente");
+              }
+            });
+  }
 
-    public Mono<ServerResponse> requireAuthentication(ServerRequest request,
-                                                      java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
-        return validateTokenAndGetRole(request)
-                .flatMap(role -> handler.apply(request));
-    }
+  public Mono<ServerResponse> requireAuthentication(
+      ServerRequest request,
+      java.util.function.Function<ServerRequest, Mono<ServerResponse>> handler) {
+    return validateTokenAndGetRole(request).flatMap(role -> handler.apply(request));
+  }
 
-    // Crear una excepción de negocio que extienda BusinessException para mejor manejo
-    public static class UnauthorizedException extends BusinessException {
-        public UnauthorizedException(String message) {
-            super("UNAUTHORIZED", message, 401);
-        }
+  // Crear una excepción de negocio que extienda BusinessException para mejor manejo
+  public static class UnauthorizedException extends BusinessException {
+    public UnauthorizedException(String message) {
+      super("UNAUTHORIZED", message, 401);
     }
+  }
 }

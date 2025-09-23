@@ -9,18 +9,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class MicrometerMetricPublisherTest {
 
-    @Test
-    void metricTest() {
-        LoggingMeterRegistry loggingMeterRegistry = LoggingMeterRegistry
-            .builder(LoggingRegistryConfig.DEFAULT)
-            .build();
+  @Test
+  void metricTest() {
+    LoggingMeterRegistry loggingMeterRegistry =
+        LoggingMeterRegistry.builder(LoggingRegistryConfig.DEFAULT).build();
 
-        MicrometerMetricPublisher micrometerMetricPublisher = new MicrometerMetricPublisher(loggingMeterRegistry);
+    MicrometerMetricPublisher micrometerMetricPublisher =
+        new MicrometerMetricPublisher(loggingMeterRegistry);
 
-        micrometerMetricPublisher.publish(EmptyMetricCollection.create());
-        micrometerMetricPublisher.close();
+    micrometerMetricPublisher.publish(EmptyMetricCollection.create());
+    micrometerMetricPublisher.close();
 
-        assertNotNull(micrometerMetricPublisher);
-
-    }
+    assertNotNull(micrometerMetricPublisher);
+  }
 }

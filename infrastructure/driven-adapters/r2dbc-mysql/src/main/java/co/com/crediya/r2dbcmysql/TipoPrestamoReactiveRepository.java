@@ -5,6 +5,8 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import reactor.core.publisher.Mono;
 
-public interface TipoPrestamoReactiveRepository extends ReactiveCrudRepository<TipoPrestamoEntity, Long>, ReactiveQueryByExampleExecutor<TipoPrestamoEntity> {
-    Mono<TipoPrestamoEntity> findByNombre(String nombre);
+public interface TipoPrestamoReactiveRepository
+    extends ReactiveCrudRepository<TipoPrestamoEntity, Long>,
+        ReactiveQueryByExampleExecutor<TipoPrestamoEntity> {
+  Mono<TipoPrestamoEntity> findByNombre(String nombre);
 }

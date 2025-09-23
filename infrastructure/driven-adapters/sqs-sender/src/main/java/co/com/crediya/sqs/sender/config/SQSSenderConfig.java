@@ -21,32 +21,32 @@ import java.net.URI;
 @ConditionalOnMissingBean(SqsAsyncClient.class)
 public class SQSSenderConfig {
 
-    @Bean
-    @Primary
-    public SqsAsyncClient sqsSenderClient(SQSSenderProperties properties, MetricPublisher publisher) {
-        return SqsAsyncClient.builder()
-                .endpointOverride(resolveEndpoint(properties))
-                .region(Region.of(properties.region()))
-                .overrideConfiguration(o -> o.addMetricPublisher(publisher))
-                .credentialsProvider(getProviderChain())
-                .build();
-    }
+  @Bean
+  @Primary
+  public SqsAsyncClient sqsSenderClient(SQSSenderProperties properties, MetricPublisher publisher) {
+    return SqsAsyncClient.builder()
+        .endpointOverride(resolveEndpoint(properties))
+        .region(Region.of(properties.region()))
+        .overrideConfiguration(o -> o.addMetricPublisher(publisher))
+        .credentialsProvider(getProviderChain())
+        .build();
+  }
 
-    private AwsCredentialsProviderChain getProviderChain() {
-        return AwsCredentialsProviderChain.builder()
-                .addCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-                .addCredentialsProvider(SystemPropertyCredentialsProvider.create())
-                .addCredentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
-                .addCredentialsProvider(ProfileCredentialsProvider.create())
-                .addCredentialsProvider(ContainerCredentialsProvider.builder().build())
-                .addCredentialsProvider(InstanceProfileCredentialsProvider.create())
-                .build();
-    }
+  private AwsCredentialsProviderChain getProviderChain() {
+    return AwsCredentialsProviderChain.builder()
+        .addCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
+        .addCredentialsProvider(SystemPropertyCredentialsProvider.create())
+        .addCredentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+        .addCredentialsProvider(ProfileCredentialsProvider.create())
+        .addCredentialsProvider(ContainerCredentialsProvider.builder().build())
+        .addCredentialsProvider(InstanceProfileCredentialsProvider.create())
+        .build();
+  }
 
-    private URI resolveEndpoint(SQSSenderProperties properties) {
-        if (properties.endpoint() != null) {
-            return URI.create(properties.endpoint());
-        }
-        return null;
+  private URI resolveEndpoint(SQSSenderProperties properties) {
+    if (properties.endpoint() != null) {
+      return URI.create(properties.endpoint());
     }
+    return null;
+  }
 }

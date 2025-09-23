@@ -8,21 +8,24 @@ import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
 public class EstadoUseCase {
-    private final EstadoRepository estadoRepository;
+  private final EstadoRepository estadoRepository;
 
-    public Mono<Estado> findById(Long idEstado) {
-        if (idEstado == null) {
-            return Mono.error(new IllegalArgumentException("El id del estado no puede ser nulo"));
-        }
-
-        return estadoRepository.findById(idEstado)
-                .switchIfEmpty(Mono.error(new IllegalStateException("No existe un estado con id: " + idEstado)))
-                .onErrorMap(throwable -> {
-                    // Si ya es una BusinessException, la dejamos pasar
-                    if (throwable instanceof NotFoundException) {
-                        return throwable;
-                    }
-                    return new IllegalStateException("Error al obtener el estado con id: " + idEstado);
-                });
+  public Mono<Estado> findById(Long idEstado) {
+    if (idEstado == null) {
+      return Mono.error(new IllegalArgumentException("El id del estado no puede ser nulo"));
     }
+
+    return estadoRepository
+        .findById(idEstado)
+        .switchIfEmpty(
+            Mono.error(new IllegalStateException("No existe un estado con id: " + idEstado)))
+        .onErrorMap(
+            throwable -> {
+              // Si ya es una BusinessException, la dejamos pasar
+              if (throwable instanceof NotFoundException) {
+                return throwable;
+              }
+              return new IllegalStateException("Error al obtener el estado con id: " + idEstado);
+            });
+  }
 }

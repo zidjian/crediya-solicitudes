@@ -15,13 +15,13 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table("estado")
 public class EstadoEntity {
 
-    @Id
-    @Column("id_estado")
-    private Long idEstado;
+  @Id
+  @Column("id_estado")
+  private Long idEstado;
 
-    @Column("nombre")
-    private String nombre;
+  @Column("nombre")
+  private String nombre;
 
-    @Column("descripcion")
-    private String descripcion;
+  @Column("descripcion")
+  private String descripcion;
 }

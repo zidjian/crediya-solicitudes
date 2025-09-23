@@ -7,27 +7,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class SolicitudEntityMapper {
 
-    public SolicitudEntity toEntity(Solicitud solicitud) {
-        return new SolicitudEntity(
-                solicitud.getIdSolicitud(),
-                solicitud.getMonto(),
-                solicitud.getPlazo(),
-                solicitud.getEmail(),
-                solicitud.getIdUser(),
-                solicitud.getIdEstado(),
-                solicitud.getIdTipoPrestamo()
-        );
-    }
+  public SolicitudEntity toEntity(Solicitud solicitud) {
+    return new SolicitudEntity(
+        solicitud.getIdSolicitud(),
+        solicitud.getMonto(),
+        solicitud.getPlazo(),
+        solicitud.getEmail(),
+        solicitud.getIdUser(),
+        solicitud.getIdEstado(),
+        solicitud.getIdTipoPrestamo());
+  }
 
-    public Solicitud toDomain(SolicitudEntity entity) {
-        return Solicitud.fromDatabase(
-                entity.getIdSolicitud(),
-                entity.getIdUser(),
-                entity.getEmail(),
-                entity.getMonto(),
-                entity.getPlazo(),
-                entity.getIdTipoPrestamo(),
-                entity.getIdEstado()
-        );
-    }
+  public Solicitud toDomain(SolicitudEntity entity) {
+    return Solicitud.fromDatabase(
+        entity.getIdSolicitud(),
+        entity.getIdUser(),
+        entity.getEmail(),
+        entity.getMonto(),
+        entity.getPlazo(),
+        entity.getIdTipoPrestamo(),
+        entity.getIdEstado());
+  }
 }

@@ -18,56 +18,55 @@ import java.security.NoSuchAlgorithmException;
 @Log4j2
 @RequiredArgsConstructor
 public class SQSSender /*implements SomeGateway*/ {
-    private final SQSSenderProperties properties;
-    private final @Qualifier("sqsSenderClient") SqsAsyncClient client;
+  private final SQSSenderProperties properties;
+  private final @Qualifier("sqsSenderClient") SqsAsyncClient client;
 
-    public Mono<String> send(String message) {
-        return send(message, properties.queueUrl());
+  public Mono<String> send(String message) {
+    return send(message, properties.queueUrl());
+  }
+
+  public Mono<String> send(String message, String queueUrl) {
+    return Mono.fromCallable(() -> buildRequest(message, queueUrl))
+        .flatMap(request -> Mono.fromFuture(client.sendMessage(request)))
+        .doOnNext(response -> log.debug("Message sent {}", response.messageId()))
+        .map(SendMessageResponse::messageId);
+  }
+
+  private SendMessageRequest buildRequest(String message) {
+    return buildRequest(message, properties.queueUrl());
+  }
+
+  private SendMessageRequest buildRequest(String message, String queueUrl) {
+    SendMessageRequest.Builder builder =
+        SendMessageRequest.builder().queueUrl(queueUrl).messageBody(message);
+
+    // Add MessageGroupId and MessageDeduplicationId for FIFO queues
+    if (isFifoQueue(queueUrl)) {
+      builder.messageGroupId("default-group");
+      builder.messageDeduplicationId(generateMessageDeduplicationId(message));
     }
 
-    public Mono<String> send(String message, String queueUrl) {
-        return Mono.fromCallable(() -> buildRequest(message, queueUrl))
-                .flatMap(request -> Mono.fromFuture(client.sendMessage(request)))
-                .doOnNext(response -> log.debug("Message sent {}", response.messageId()))
-                .map(SendMessageResponse::messageId);
+    return builder.build();
+  }
+
+  private String generateMessageDeduplicationId(String message) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("MD5");
+      byte[] hash = digest.digest(message.getBytes(StandardCharsets.UTF_8));
+      StringBuilder hexString = new StringBuilder();
+      for (byte b : hash) {
+        String hex = Integer.toHexString(0xff & b);
+        if (hex.length() == 1) hexString.append('0');
+        hexString.append(hex);
+      }
+      return hexString.toString();
+    } catch (NoSuchAlgorithmException e) {
+      log.warn("MD5 algorithm not available, using message hashCode as fallback", e);
+      return String.valueOf(message.hashCode());
     }
+  }
 
-    private SendMessageRequest buildRequest(String message) {
-        return buildRequest(message, properties.queueUrl());
-    }
-
-    private SendMessageRequest buildRequest(String message, String queueUrl) {
-        SendMessageRequest.Builder builder = SendMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .messageBody(message);
-
-        // Add MessageGroupId and MessageDeduplicationId for FIFO queues
-        if (isFifoQueue(queueUrl)) {
-            builder.messageGroupId("default-group");
-            builder.messageDeduplicationId(generateMessageDeduplicationId(message));
-        }
-
-        return builder.build();
-    }
-
-    private String generateMessageDeduplicationId(String message) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            byte[] hash = digest.digest(message.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            log.warn("MD5 algorithm not available, using message hashCode as fallback", e);
-            return String.valueOf(message.hashCode());
-        }
-    }
-
-    private boolean isFifoQueue(String queueUrl) {
-        return queueUrl != null && queueUrl.endsWith(".fifo");
-    }
+  private boolean isFifoQueue(String queueUrl) {
+    return queueUrl != null && queueUrl.endsWith(".fifo");
+  }
 }

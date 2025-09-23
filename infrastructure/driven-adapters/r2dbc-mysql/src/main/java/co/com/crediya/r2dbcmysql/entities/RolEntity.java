@@ -13,11 +13,11 @@ import org.springframework.data.relational.core.mapping.Table;
 @Builder
 public class RolEntity {
 
-    @Id
-    @Column("id_tipo_prestamo")
-    private Long idEstado;
+  @Id
+  @Column("id_tipo_prestamo")
+  private Long idEstado;
 
-    private String nombre;
+  private String nombre;
 
-    private String descripcion;
+  private String descripcion;
 }

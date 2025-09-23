@@ -12,20 +12,19 @@ import java.time.Duration;
 @Configuration
 public class WebClientConfig {
 
-    @Value("${webclient.timeout.connect:5000}")
-    private int connectTimeout;
+  @Value("${webclient.timeout.connect:5000}")
+  private int connectTimeout;
 
-    @Value("${webclient.timeout.response:10000}")
-    private int responseTimeout;
+  @Value("${webclient.timeout.response:10000}")
+  private int responseTimeout;
 
-    @Bean
-    public WebClient webClient() {
-        HttpClient httpClient = HttpClient.create()
-                .responseTimeout(Duration.ofMillis(responseTimeout));
+  @Bean
+  public WebClient webClient() {
+    HttpClient httpClient = HttpClient.create().responseTimeout(Duration.ofMillis(responseTimeout));
 
-        return WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
-                .build();
-    }
+    return WebClient.builder()
+        .clientConnector(new ReactorClientHttpConnector(httpClient))
+        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
+        .build();
+  }
 }

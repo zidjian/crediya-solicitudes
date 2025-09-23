@@ -7,5 +7,6 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 public interface CapacidadEndeudamientoGateway {
-    Mono<String> enviarSolicitudCapacidadEndeudamiento(Usuario usuario, Solicitud solicitud, List<Solicitud> solicitudes, Long idSolicitudActual);
+  Mono<String> enviarSolicitudCapacidadEndeudamiento(
+      Usuario usuario, Solicitud solicitud, List<Solicitud> solicitudes, Long idSolicitudActual);
 }

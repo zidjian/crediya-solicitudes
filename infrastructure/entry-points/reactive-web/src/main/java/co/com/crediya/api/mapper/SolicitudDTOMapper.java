@@ -14,31 +14,32 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class SolicitudDTOMapper {
 
-    private final TipoPrestamoRepository tipoPrestamoRepository;
-    private final EstadoRepository estadoRepository;
+  private final TipoPrestamoRepository tipoPrestamoRepository;
+  private final EstadoRepository estadoRepository;
 
-    public Mono<RespuestaSolicitudDTO> toResponse(Solicitud solicitud) {
-        return Mono.zip(
-                tipoPrestamoRepository.findById(solicitud.getIdTipoPrestamo()),
-                estadoRepository.findById(solicitud.getIdEstado())
-        ).map(tuple -> {
-            var tipoPrestamo = tuple.getT1();
-            var estado = tuple.getT2();
+  public Mono<RespuestaSolicitudDTO> toResponse(Solicitud solicitud) {
+    return Mono.zip(
+            tipoPrestamoRepository.findById(solicitud.getIdTipoPrestamo()),
+            estadoRepository.findById(solicitud.getIdEstado()))
+        .map(
+            tuple -> {
+              var tipoPrestamo = tuple.getT1();
+              var estado = tuple.getT2();
 
-            // Calcular deuda total mensual
-            BigDecimal deudaTotalMensual = solicitud.calcularDeudaTotalMensual(tipoPrestamo.getTasaInteres());
+              // Calcular deuda total mensual
+              BigDecimal deudaTotalMensual =
+                  solicitud.calcularDeudaTotalMensual(tipoPrestamo.getTasaInteres());
 
-            return new RespuestaSolicitudDTO(
-                    solicitud.getIdSolicitud(),
-                    solicitud.getIdUser(),
-                    solicitud.getEmail(),
-                    solicitud.getMonto(),
-                    solicitud.getPlazo(),
-                    tipoPrestamo.getNombre(),
-                    estado.getNombre(),
-                    tipoPrestamo.getTasaInteres(),
-                    deudaTotalMensual
-            );
-        });
-    }
+              return new RespuestaSolicitudDTO(
+                  solicitud.getIdSolicitud(),
+                  solicitud.getIdUser(),
+                  solicitud.getEmail(),
+                  solicitud.getMonto(),
+                  solicitud.getPlazo(),
+                  tipoPrestamo.getNombre(),
+                  estado.getNombre(),
+                  tipoPrestamo.getTasaInteres(),
+                  deudaTotalMensual);
+            });
+  }
 }

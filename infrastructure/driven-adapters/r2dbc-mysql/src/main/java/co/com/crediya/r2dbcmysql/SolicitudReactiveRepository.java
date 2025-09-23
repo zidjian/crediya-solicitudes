@@ -7,10 +7,12 @@ import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface SolicitudReactiveRepository extends ReactiveCrudRepository<SolicitudEntity, Long>, ReactiveQueryByExampleExecutor<SolicitudEntity> {
-    Mono<Boolean> existsByIdUser(String idUser);
+public interface SolicitudReactiveRepository
+    extends ReactiveCrudRepository<SolicitudEntity, Long>,
+        ReactiveQueryByExampleExecutor<SolicitudEntity> {
+  Mono<Boolean> existsByIdUser(String idUser);
 
-    Flux<SolicitudEntity> findAllByOrderByIdSolicitudDesc(Pageable pageable);
+  Flux<SolicitudEntity> findAllByOrderByIdSolicitudDesc(Pageable pageable);
 
-    Flux<SolicitudEntity> findAllByIdUser(String idUser);
+  Flux<SolicitudEntity> findAllByIdUser(String idUser);
 }

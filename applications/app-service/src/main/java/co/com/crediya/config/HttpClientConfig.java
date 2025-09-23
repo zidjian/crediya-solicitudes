@@ -7,6 +7,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class HttpClientConfig {
 
-    // Bean WebClient eliminado para evitar conflicto con WebClientConfig
-    // Se usa el WebClient configurado en el módulo http-client
+  // Bean WebClient eliminado para evitar conflicto con WebClientConfig
+  // Se usa el WebClient configurado en el módulo http-client
 }

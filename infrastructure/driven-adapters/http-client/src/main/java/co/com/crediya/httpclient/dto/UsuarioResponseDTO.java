@@ -17,47 +17,50 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UsuarioResponseDTO {
 
-    @NotNull
-    @JsonProperty("idUsuario")
-    private Long idUsuario;
+  @NotNull
+  @JsonProperty("idUsuario")
+  private Long idUsuario;
 
-    @NotBlank
-    @JsonProperty("nombre")
-    private String nombre;
+  @NotBlank
+  @JsonProperty("nombre")
+  private String nombre;
 
-    @NotBlank
-    @JsonProperty("apellido")
-    private String apellido;
+  @NotBlank
+  @JsonProperty("apellido")
+  private String apellido;
 
-    @Email
-    @JsonProperty("email")
-    private String email;
+  @Email
+  @JsonProperty("email")
+  private String email;
 
-    @NotBlank
-    @JsonProperty("documentoIdentidad")
-    private String documentoIdentidad;
+  @NotBlank
+  @JsonProperty("documentoIdentidad")
+  private String documentoIdentidad;
 
-    @JsonProperty("telefono")
-    private String telefono;
+  @JsonProperty("telefono")
+  private String telefono;
 
-    @NotNull
-    @Positive
-    @JsonProperty("idRol")
-    private Long idRol;
+  @NotNull
+  @Positive
+  @JsonProperty("idRol")
+  private Long idRol;
 
-    @JsonProperty("rol")
-    private String rol;
+  @JsonProperty("rol")
+  private String rol;
 
-    @JsonProperty("salarioBase")
-    private BigDecimal salarioBase;
+  @JsonProperty("salarioBase")
+  private BigDecimal salarioBase;
 
-    @JsonProperty("activo")
-    private boolean activo;
+  @JsonProperty("activo")
+  private boolean activo;
 
-    public boolean isValid() {
-        return idUsuario != null &&
-               nombre != null && !nombre.trim().isEmpty() &&
-               apellido != null && !apellido.trim().isEmpty() &&
-               documentoIdentidad != null && !documentoIdentidad.trim().isEmpty();
-    }
+  public boolean isValid() {
+    return idUsuario != null
+        && nombre != null
+        && !nombre.trim().isEmpty()
+        && apellido != null
+        && !apellido.trim().isEmpty()
+        && documentoIdentidad != null
+        && !documentoIdentidad.trim().isEmpty();
+  }
 }

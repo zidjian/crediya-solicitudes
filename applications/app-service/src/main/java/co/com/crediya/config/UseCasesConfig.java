@@ -13,13 +13,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class UseCasesConfig {
 
-    @Bean
-    public SolicitudUseCase solicitudUseCase(SolicitudRepository solicitudRepository,
-                                           TipoPrestamoRepository tipoPrestamoRepository,
-                                           EstadoRepository estadoRepository,
-                                           NotificationGateway notificationGateway,
-                                           CapacidadEndeudamientoGateway capacidadEndeudamientoGateway,
-                                           UsuarioRepository usuarioRepository) {
-        return new SolicitudUseCase(solicitudRepository, tipoPrestamoRepository, estadoRepository, notificationGateway, capacidadEndeudamientoGateway, usuarioRepository);
-    }
+  @Bean
+  public SolicitudUseCase solicitudUseCase(
+      SolicitudRepository solicitudRepository,
+      TipoPrestamoRepository tipoPrestamoRepository,
+      EstadoRepository estadoRepository,
+      NotificationGateway notificationGateway,
+      CapacidadEndeudamientoGateway capacidadEndeudamientoGateway,
+      UsuarioRepository usuarioRepository) {
+    return new SolicitudUseCase(
+        solicitudRepository,
+        tipoPrestamoRepository,
+        estadoRepository,
+        notificationGateway,
+        capacidadEndeudamientoGateway,
+        usuarioRepository);
+  }
 }

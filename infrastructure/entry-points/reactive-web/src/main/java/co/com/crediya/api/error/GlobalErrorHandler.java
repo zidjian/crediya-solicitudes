@@ -30,232 +30,237 @@ import java.util.UUID;
 @Order(-2)
 public class GlobalErrorHandler extends AbstractErrorWebExceptionHandler {
 
-    public GlobalErrorHandler(ErrorAttributes errorAttributes,
-                              ApplicationContext applicationContext,
-                              ServerCodecConfigurer codecConfigurer) {
-        super(errorAttributes, new WebProperties.Resources(), applicationContext);
-        this.setMessageWriters(codecConfigurer.getWriters());
-        this.setMessageReaders(codecConfigurer.getReaders());
+  public GlobalErrorHandler(
+      ErrorAttributes errorAttributes,
+      ApplicationContext applicationContext,
+      ServerCodecConfigurer codecConfigurer) {
+    super(errorAttributes, new WebProperties.Resources(), applicationContext);
+    this.setMessageWriters(codecConfigurer.getWriters());
+    this.setMessageReaders(codecConfigurer.getReaders());
+  }
+
+  @Override
+  protected RouterFunction<ServerResponse> getRoutingFunction(ErrorAttributes errorAttributes) {
+    return RouterFunctions.route(RequestPredicates.all(), this::renderErrorResponse);
+  }
+
+  private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
+    Throwable error = getError(request);
+    HttpStatus status = determineHttpStatus(error);
+    String codigo = determineCodigo(error);
+    String mensaje = determineMensaje(error);
+
+    ErrorResponse response =
+        ErrorResponse.of(
+            codigo,
+            mensaje,
+            status.value(),
+            request.path(),
+            buildDetalles(error),
+            UUID.randomUUID().toString());
+
+    return ServerResponse.status(status)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(response);
+  }
+
+  private HttpStatus determineHttpStatus(Throwable error) {
+    if (error instanceof BusinessException businessException) {
+      return HttpStatus.valueOf(businessException.getHttpStatus());
+    }
+    if (error instanceof ResponseStatusException ex) {
+      return (HttpStatus) ex.getStatusCode();
+    }
+    if (error instanceof WebExchangeBindException
+        || error instanceof jakarta.validation.ConstraintViolationException
+        || isJacksonDeserializationError(error)
+        || isJsonProcessingError(error)
+        || isServerWebInputException(error)) {
+      return HttpStatus.BAD_REQUEST;
+    }
+    return HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
+  private String determineCodigo(Throwable error) {
+    if (error instanceof BusinessException businessException) {
+      return businessException.getCode();
+    }
+    if (error instanceof ResponseStatusException ex) {
+      return String.valueOf(ex.getStatusCode().value());
+    }
+    if (error instanceof WebExchangeBindException
+        || error instanceof jakarta.validation.ConstraintViolationException
+        || isJacksonDeserializationError(error)
+        || isJsonProcessingError(error)
+        || isServerWebInputException(error)) {
+      return "400";
+    }
+    return "ERR-500";
+  }
+
+  private String determineMensaje(Throwable error) {
+    if (isJsonProcessingError(error) || isServerWebInputException(error)) {
+      return "Error en el formato de los datos enviados";
+    }
+    if (error instanceof WebExchangeBindException
+        || error instanceof jakarta.validation.ConstraintViolationException) {
+      return "Error de validación en los datos enviados";
+    }
+    return error.getMessage() != null ? error.getMessage() : "Error inesperado";
+  }
+
+  private List<ErrorDetail> buildDetalles(Throwable error) {
+    if (error instanceof WebExchangeBindException bindException) {
+      return bindException.getFieldErrors().stream()
+          .map(fieldError -> new ErrorDetail(fieldError.getField(), fieldError.getDefaultMessage()))
+          .toList();
     }
 
-    @Override
-    protected RouterFunction<ServerResponse> getRoutingFunction(ErrorAttributes errorAttributes) {
-        return RouterFunctions.route(RequestPredicates.all(), this::renderErrorResponse);
+    // Agregar manejo para ConstraintViolationException
+    if (error instanceof jakarta.validation.ConstraintViolationException constraintException) {
+      return constraintException.getConstraintViolations().stream()
+          .map(
+              violation ->
+                  new ErrorDetail(violation.getPropertyPath().toString(), violation.getMessage()))
+          .toList();
     }
 
-    private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
-        Throwable error = getError(request);
-        HttpStatus status = determineHttpStatus(error);
-        String codigo = determineCodigo(error);
-        String mensaje = determineMensaje(error);
-
-        ErrorResponse response = ErrorResponse.of(
-                codigo,
-                mensaje,
-                status.value(),
-                request.path(),
-                buildDetalles(error),
-                UUID.randomUUID().toString()
-        );
-
-        return ServerResponse.status(status)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(response);
+    // Manejar errores de deserialización JSON específicos
+    if (isJsonProcessingError(error)) {
+      return handleJsonProcessingError(error);
     }
 
-    private HttpStatus determineHttpStatus(Throwable error) {
-        if (error instanceof BusinessException businessException) {
-            return HttpStatus.valueOf(businessException.getHttpStatus());
-        }
-        if (error instanceof ResponseStatusException ex) {
-            return (HttpStatus) ex.getStatusCode();
-        }
-        if (error instanceof WebExchangeBindException ||
-            error instanceof jakarta.validation.ConstraintViolationException ||
-            isJacksonDeserializationError(error) ||
-            isJsonProcessingError(error) ||
-            isServerWebInputException(error)) {
-            return HttpStatus.BAD_REQUEST;
-        }
-        return HttpStatus.INTERNAL_SERVER_ERROR;
+    if (isServerWebInputException(error)) {
+      return handleServerWebInputException(error);
     }
 
-    private String determineCodigo(Throwable error) {
-        if (error instanceof BusinessException businessException) {
-            return businessException.getCode();
-        }
-        if (error instanceof ResponseStatusException ex) {
-            return String.valueOf(ex.getStatusCode().value());
-        }
-        if (error instanceof WebExchangeBindException ||
-            error instanceof jakarta.validation.ConstraintViolationException ||
-            isJacksonDeserializationError(error) ||
-            isJsonProcessingError(error) ||
-            isServerWebInputException(error)) {
-            return "400";
-        }
-        return "ERR-500";
+    if (isJacksonDeserializationError(error)) {
+      String fieldName = extractFieldFromMessage(error.getCause().getMessage());
+      return List.of(new ErrorDetail(fieldName, "Propiedad desconocida no permitida"));
     }
 
-    private String determineMensaje(Throwable error) {
-        if (isJsonProcessingError(error) || isServerWebInputException(error)) {
-            return "Error en el formato de los datos enviados";
-        }
-        if (error instanceof WebExchangeBindException || error instanceof jakarta.validation.ConstraintViolationException) {
-            return "Error de validación en los datos enviados";
-        }
-        return error.getMessage() != null ? error.getMessage() : "Error inesperado";
+    // Extraer detalles del mensaje si contiene información de campo
+    if (error.getMessage() != null && error.getMessage().contains(":")) {
+      return extractDetailsFromMessage(error.getMessage());
     }
 
-    private List<ErrorDetail> buildDetalles(Throwable error) {
-        if (error instanceof WebExchangeBindException bindException) {
-            return bindException.getFieldErrors().stream()
-                    .map(fieldError -> new ErrorDetail(
-                            fieldError.getField(),
-                            fieldError.getDefaultMessage()))
-                    .toList();
-        }
+    return Collections.emptyList();
+  }
 
-        // Agregar manejo para ConstraintViolationException
-        if (error instanceof jakarta.validation.ConstraintViolationException constraintException) {
-            return constraintException.getConstraintViolations().stream()
-                    .map(violation -> new ErrorDetail(
-                            violation.getPropertyPath().toString(),
-                            violation.getMessage()))
-                    .toList();
-        }
+  private boolean isJsonProcessingError(Throwable error) {
+    Throwable cause = error.getCause();
+    return cause instanceof JsonProcessingException
+        || cause instanceof InvalidFormatException
+        || cause instanceof MismatchedInputException;
+  }
 
-        // Manejar errores de deserialización JSON específicos
-        if (isJsonProcessingError(error)) {
-            return handleJsonProcessingError(error);
-        }
+  private boolean isServerWebInputException(Throwable error) {
+    return error instanceof ServerWebInputException;
+  }
 
-        if (isServerWebInputException(error)) {
-            return handleServerWebInputException(error);
-        }
+  private List<ErrorDetail> handleJsonProcessingError(Throwable error) {
+    Throwable cause = error.getCause();
 
-        if (isJacksonDeserializationError(error)) {
-            String fieldName = extractFieldFromMessage(error.getCause().getMessage());
-            return List.of(new ErrorDetail(fieldName, "Propiedad desconocida no permitida"));
-        }
+    if (cause instanceof InvalidFormatException invalidFormatException) {
+      String fieldName = extractFieldNameFromJsonReference(invalidFormatException.getPath());
+      String targetType = invalidFormatException.getTargetType().getSimpleName();
+      String value = invalidFormatException.getValue().toString();
 
-        // Extraer detalles del mensaje si contiene información de campo
-        if (error.getMessage() != null && error.getMessage().contains(":")) {
-            return extractDetailsFromMessage(error.getMessage());
-        }
+      String mensaje =
+          String.format(
+              "El valor '%s' no es válido para el campo de tipo %s",
+              value, getSpanishTypeName(targetType));
 
-        return Collections.emptyList();
+      return List.of(new ErrorDetail(fieldName, mensaje));
     }
 
-    private boolean isJsonProcessingError(Throwable error) {
-        Throwable cause = error.getCause();
-        return cause instanceof JsonProcessingException ||
-               cause instanceof InvalidFormatException ||
-               cause instanceof MismatchedInputException;
+    if (cause instanceof MismatchedInputException mismatchedInputException) {
+      String fieldName = extractFieldNameFromJsonReference(mismatchedInputException.getPath());
+      String targetType = mismatchedInputException.getTargetType().getSimpleName();
+
+      String mensaje =
+          String.format(
+              "El formato del campo no es válido para tipo %s", getSpanishTypeName(targetType));
+
+      return List.of(new ErrorDetail(fieldName, mensaje));
     }
 
-    private boolean isServerWebInputException(Throwable error) {
-        return error instanceof ServerWebInputException;
+    return List.of(new ErrorDetail("unknown", "Error de formato en el JSON"));
+  }
+
+  private List<ErrorDetail> handleServerWebInputException(Throwable error) {
+    ServerWebInputException serverError = (ServerWebInputException) error;
+    Throwable rootCause = getRootCause(serverError);
+
+    if (rootCause instanceof InvalidFormatException invalidFormatException) {
+      String fieldName = extractFieldNameFromJsonReference(invalidFormatException.getPath());
+      String targetType = invalidFormatException.getTargetType().getSimpleName();
+      String value = invalidFormatException.getValue().toString();
+
+      String mensaje =
+          String.format(
+              "El valor '%s' no es válido para el campo de tipo %s",
+              value, getSpanishTypeName(targetType));
+
+      return List.of(new ErrorDetail(fieldName, mensaje));
     }
 
-    private List<ErrorDetail> handleJsonProcessingError(Throwable error) {
-        Throwable cause = error.getCause();
+    return List.of(new ErrorDetail("request", "Error en el formato de la petición"));
+  }
 
-        if (cause instanceof InvalidFormatException invalidFormatException) {
-            String fieldName = extractFieldNameFromJsonReference(invalidFormatException.getPath());
-            String targetType = invalidFormatException.getTargetType().getSimpleName();
-            String value = invalidFormatException.getValue().toString();
-
-            String mensaje = String.format("El valor '%s' no es válido para el campo de tipo %s",
-                                         value, getSpanishTypeName(targetType));
-
-            return List.of(new ErrorDetail(fieldName, mensaje));
-        }
-
-        if (cause instanceof MismatchedInputException mismatchedInputException) {
-            String fieldName = extractFieldNameFromJsonReference(mismatchedInputException.getPath());
-            String targetType = mismatchedInputException.getTargetType().getSimpleName();
-
-            String mensaje = String.format("El formato del campo no es válido para tipo %s",
-                                         getSpanishTypeName(targetType));
-
-            return List.of(new ErrorDetail(fieldName, mensaje));
-        }
-
-        return List.of(new ErrorDetail("unknown", "Error de formato en el JSON"));
+  private String extractFieldNameFromJsonReference(List<JsonMappingException.Reference> path) {
+    if (path != null && !path.isEmpty()) {
+      return path.get(path.size() - 1).getFieldName();
     }
+    return "unknown";
+  }
 
-    private List<ErrorDetail> handleServerWebInputException(Throwable error) {
-        ServerWebInputException serverError = (ServerWebInputException) error;
-        Throwable rootCause = getRootCause(serverError);
+  private String getSpanishTypeName(String javaTypeName) {
+    return switch (javaTypeName.toLowerCase()) {
+      case "bigdecimal" -> "decimal";
+      case "integer", "int" -> "número entero";
+      case "long" -> "número entero largo";
+      case "double", "float" -> "número decimal";
+      case "boolean" -> "booleano";
+      case "localdate" -> "fecha";
+      case "localdatetime" -> "fecha y hora";
+      default -> javaTypeName;
+    };
+  }
 
-        if (rootCause instanceof InvalidFormatException invalidFormatException) {
-            String fieldName = extractFieldNameFromJsonReference(invalidFormatException.getPath());
-            String targetType = invalidFormatException.getTargetType().getSimpleName();
-            String value = invalidFormatException.getValue().toString();
-
-            String mensaje = String.format("El valor '%s' no es válido para el campo de tipo %s",
-                                         value, getSpanishTypeName(targetType));
-
-            return List.of(new ErrorDetail(fieldName, mensaje));
-        }
-
-        return List.of(new ErrorDetail("request", "Error en el formato de la petición"));
+  private Throwable getRootCause(Throwable throwable) {
+    Throwable cause = throwable.getCause();
+    if (cause == null) {
+      return throwable;
     }
+    return getRootCause(cause);
+  }
 
-    private String extractFieldNameFromJsonReference(List<JsonMappingException.Reference> path) {
-        if (path != null && !path.isEmpty()) {
-            return path.get(path.size() - 1).getFieldName();
-        }
-        return "unknown";
-    }
+  private boolean isJacksonDeserializationError(Throwable error) {
+    return error.getCause() != null
+        && error.getCause().getMessage() != null
+        && error.getCause().getMessage().contains("Unrecognized field");
+  }
 
-    private String getSpanishTypeName(String javaTypeName) {
-        return switch (javaTypeName.toLowerCase()) {
-            case "bigdecimal" -> "decimal";
-            case "integer", "int" -> "número entero";
-            case "long" -> "número entero largo";
-            case "double", "float" -> "número decimal";
-            case "boolean" -> "booleano";
-            case "localdate" -> "fecha";
-            case "localdatetime" -> "fecha y hora";
-            default -> javaTypeName;
-        };
+  private String extractFieldFromMessage(String message) {
+    int start = message.indexOf("\"");
+    if (start != -1) {
+      int end = message.indexOf("\"", start + 1);
+      if (end > start) {
+        return message.substring(start + 1, end);
+      }
     }
+    return "unknown";
+  }
 
-    private Throwable getRootCause(Throwable throwable) {
-        Throwable cause = throwable.getCause();
-        if (cause == null) {
-            return throwable;
-        }
-        return getRootCause(cause);
+  private List<ErrorDetail> extractDetailsFromMessage(String message) {
+    // Buscar patrón "campo: mensaje"
+    String[] parts = message.split(":", 2);
+    if (parts.length == 2) {
+      String field = parts[0].trim();
+      String errorMessage = parts[1].trim();
+      return List.of(new ErrorDetail(field, errorMessage));
     }
-
-    private boolean isJacksonDeserializationError(Throwable error) {
-        return error.getCause() != null &&
-                error.getCause().getMessage() != null &&
-                error.getCause().getMessage().contains("Unrecognized field");
-    }
-
-    private String extractFieldFromMessage(String message) {
-        int start = message.indexOf("\"");
-        if (start != -1) {
-            int end = message.indexOf("\"", start + 1);
-            if (end > start) {
-                return message.substring(start + 1, end);
-            }
-        }
-        return "unknown";
-    }
-
-    private List<ErrorDetail> extractDetailsFromMessage(String message) {
-        // Buscar patrón "campo: mensaje"
-        String[] parts = message.split(":", 2);
-        if (parts.length == 2) {
-            String field = parts[0].trim();
-            String errorMessage = parts[1].trim();
-            return List.of(new ErrorDetail(field, errorMessage));
-        }
-        return Collections.emptyList();
-    }
+    return Collections.emptyList();
+  }
 }

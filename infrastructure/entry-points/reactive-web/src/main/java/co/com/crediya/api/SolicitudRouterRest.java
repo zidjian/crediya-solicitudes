@@ -14,11 +14,11 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 @RequiredArgsConstructor
 public class SolicitudRouterRest implements SolicitudControllerDocs {
 
-    @Bean
-    public RouterFunction<ServerResponse> routerFunction(SolicitudHandler handler) {
-        return route(POST("/api/v1/solicitud"), handler::escucharCrearSolicitud)
-                .andRoute(GET("/api/v1/solicitud"), handler::escucharSolicitudesPaginadas)
-                .andRoute(GET("/api/v1/solicitud/user/{idUser}"), handler::escucharSolicitudesPorUsuario)
-                .andRoute(PUT("/api/v1/solicitud"), handler::escucharActualizarSolicitud);
-    }
+  @Bean
+  public RouterFunction<ServerResponse> routerFunction(SolicitudHandler handler) {
+    return route(POST("/api/v1/solicitud"), handler::escucharCrearSolicitud)
+        .andRoute(GET("/api/v1/solicitud"), handler::escucharSolicitudesPaginadas)
+        .andRoute(GET("/api/v1/solicitud/user/{idUser}"), handler::escucharSolicitudesPorUsuario)
+        .andRoute(PUT("/api/v1/solicitud"), handler::escucharActualizarSolicitud);
+  }
 }

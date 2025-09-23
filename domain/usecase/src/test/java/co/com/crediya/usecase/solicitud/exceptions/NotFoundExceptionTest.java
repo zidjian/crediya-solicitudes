@@ -5,53 +5,53 @@ import org.junit.jupiter.api.Test;
 
 class NotFoundExceptionTest {
 
-    @Test
-    void debeCrearExcepcionConValoresPorDefecto() {
-        // Arrange
-        String mensajeEsperado = "No encontrado";
-        String codigoEsperado = "NOT_FOUND";
-        int statusEsperado = 404;
+  @Test
+  void debeCrearExcepcionConValoresPorDefecto() {
+    // Arrange
+    String mensajeEsperado = "No encontrado";
+    String codigoEsperado = "NOT_FOUND";
+    int statusEsperado = 404;
 
-        // Act
-        NotFoundException excepcion = new NotFoundException();
+    // Act
+    NotFoundException excepcion = new NotFoundException();
 
-        // Assert
-        assertEquals(mensajeEsperado, excepcion.getMessage());
-        assertEquals(codigoEsperado, excepcion.getCode());
-        assertEquals(statusEsperado, excepcion.getHttpStatus());
-    }
+    // Assert
+    assertEquals(mensajeEsperado, excepcion.getMessage());
+    assertEquals(codigoEsperado, excepcion.getCode());
+    assertEquals(statusEsperado, excepcion.getHttpStatus());
+  }
 
-    @Test
-    void debeCrearExcepcionConMensajePersonalizado() {
-        // Arrange
-        String mensajeEsperado = "Recurso no encontrado";
-        String codigoEsperado = "NOT_FOUND";
-        int statusEsperado = 404;
+  @Test
+  void debeCrearExcepcionConMensajePersonalizado() {
+    // Arrange
+    String mensajeEsperado = "Recurso no encontrado";
+    String codigoEsperado = "NOT_FOUND";
+    int statusEsperado = 404;
 
-        // Act
-        NotFoundException excepcion = new NotFoundException(mensajeEsperado);
+    // Act
+    NotFoundException excepcion = new NotFoundException(mensajeEsperado);
 
-        // Assert
-        assertEquals(mensajeEsperado, excepcion.getMessage());
-        assertEquals(codigoEsperado, excepcion.getCode());
-        assertEquals(statusEsperado, excepcion.getHttpStatus());
-    }
+    // Assert
+    assertEquals(mensajeEsperado, excepcion.getMessage());
+    assertEquals(codigoEsperado, excepcion.getCode());
+    assertEquals(statusEsperado, excepcion.getHttpStatus());
+  }
 
-    @Test
-    void debeCrearExcepcionConMensajeYThrowable() {
-        // Arrange
-        String mensajeEsperado = "Error con causa";
-        Throwable causa = new RuntimeException("Causa interna");
-        String codigoEsperado = "NOT_FOUND";
-        int statusEsperado = 404;
+  @Test
+  void debeCrearExcepcionConMensajeYThrowable() {
+    // Arrange
+    String mensajeEsperado = "Error con causa";
+    Throwable causa = new RuntimeException("Causa interna");
+    String codigoEsperado = "NOT_FOUND";
+    int statusEsperado = 404;
 
-        // Act
-        NotFoundException excepcion = new NotFoundException(mensajeEsperado, causa);
+    // Act
+    NotFoundException excepcion = new NotFoundException(mensajeEsperado, causa);
 
-        // Assert
-        assertEquals(mensajeEsperado, excepcion.getMessage());
-        assertEquals(codigoEsperado, excepcion.getCode());
-        assertEquals(statusEsperado, excepcion.getHttpStatus());
-        assertEquals(causa, excepcion.getCause());
-    }
+    // Assert
+    assertEquals(mensajeEsperado, excepcion.getMessage());
+    assertEquals(codigoEsperado, excepcion.getCode());
+    assertEquals(statusEsperado, excepcion.getHttpStatus());
+    assertEquals(causa, excepcion.getCause());
+  }
 }

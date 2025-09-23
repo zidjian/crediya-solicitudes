@@ -12,9 +12,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CapacidadEndeudamientoConfig {
 
-    @Bean
-    public CapacidadEndeudamientoGateway capacidadEndeudamientoGateway(SQSSender sqsSender, SolicitudRepository solicitudRepository,
-                                                                       TipoPrestamoRepository tipoPrestamoRepository, EstadoRepository estadoRepository) {
-        return new CapacidadEndeudamientoAdapter(sqsSender, solicitudRepository, tipoPrestamoRepository, estadoRepository);
-    }
+  @Bean
+  public CapacidadEndeudamientoGateway capacidadEndeudamientoGateway(
+      SQSSender sqsSender,
+      SolicitudRepository solicitudRepository,
+      TipoPrestamoRepository tipoPrestamoRepository,
+      EstadoRepository estadoRepository) {
+    return new CapacidadEndeudamientoAdapter(
+        sqsSender, solicitudRepository, tipoPrestamoRepository, estadoRepository);
+  }
 }

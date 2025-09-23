@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SQSNotificationConfig {
 
-    @Bean
-    public NotificationGateway notificationGateway(SQSSender sqsSender) {
-        return new SQSNotificationAdapter(sqsSender);
-    }
+  @Bean
+  public NotificationGateway notificationGateway(SQSSender sqsSender) {
+    return new SQSNotificationAdapter(sqsSender);
+  }
 }
