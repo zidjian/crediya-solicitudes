@@ -9,7 +9,6 @@ import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
 import co.com.crediya.model.usuario.Usuario;
 import co.com.crediya.model.usuario.gateways.UsuarioRepository;
-import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -59,7 +58,7 @@ public class SolicitudUseCase {
                 solicitudRepository.obtenerSolicitudesPorIdUser(validatedIdUsuario));
   }
 
-  public Mono<Solicitud> actualizarSolicitud(Long idSolicitud, Long nuevoIdEstado) {
+  public Mono<Solicitud> actualizarSolicitud(Long idSolicitud, Long nuevoIdEstado, Boolean send) {
     return validarIdSolicitud(idSolicitud)
         .flatMap(
             validatedIdSolicitud ->
@@ -72,10 +71,9 @@ public class SolicitudUseCase {
                                 .map(solicitud -> solicitud.cambiarEstado(validatedIdEstado))
                                 .flatMap(solicitudRepository::actualizar)
                                 .flatMap(
-                                    solicitudActualizada ->
-                                        // Enviar notificación SQS después de actualizar la
-                                        // solicitud
-                                        estadoRepository
+                                    solicitudActualizada -> {
+                                      if (Boolean.TRUE.equals(send)) {
+                                        return estadoRepository
                                             .findById(validatedIdEstado)
                                             .flatMap(
                                                 estado ->
@@ -84,7 +82,11 @@ public class SolicitudUseCase {
                                                             solicitudActualizada.getEmail(),
                                                             estado.getNombre(),
                                                             solicitudActualizada.getIdSolicitud()))
-                                            .then(Mono.just(solicitudActualizada)))));
+                                            .then(Mono.just(solicitudActualizada));
+                                      } else {
+                                        return Mono.just(solicitudActualizada);
+                                      }
+                                    })));
   }
 
   private Mono<Long> validarIdTipoPrestamo(Long idTipoPrestamo) {
@@ -178,7 +180,6 @@ public class SolicitudUseCase {
         .flatMap(
             tipoPrestamo -> {
               if (tipoPrestamo.isValidacionAutomatica()) {
-                // Fetch user data using document identity from solicitud
                 return usuarioRepository
                     .obtenerUsuarioPorId(Long.valueOf(solicitud.getIdUser()))
                     .flatMap(
@@ -194,11 +195,11 @@ public class SolicitudUseCase {
                                                 solicitudes,
                                                 solicitud.getIdSolicitud())
                                             .then(Mono.just(solicitud))))
-                    .defaultIfEmpty(solicitud); // If user not found, continue without sending
+                    .defaultIfEmpty(solicitud);
               } else {
                 return Mono.just(solicitud);
               }
             })
-        .defaultIfEmpty(solicitud); // If tipoPrestamo not found, continue
+        .defaultIfEmpty(solicitud);
   }
 }

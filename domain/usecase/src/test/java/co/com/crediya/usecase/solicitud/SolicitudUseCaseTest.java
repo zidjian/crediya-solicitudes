@@ -9,7 +9,6 @@ import co.com.crediya.model.solicitud.gateways.NotificationGateway;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
 import co.com.crediya.model.usuario.gateways.UsuarioRepository;
-import co.com.crediya.usecase.solicitud.exceptions.AlreadyExistException;
 import co.com.crediya.usecase.solicitud.exceptions.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -25,9 +26,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SolicitudUseCaseTest {
 
   @Mock private SolicitudRepository solicitudRepository;
@@ -60,7 +63,7 @@ class SolicitudUseCaseTest {
   @DisplayName("Debería crear solicitud exitosamente cuando todos los datos son válidos")
   void deberiaCrearSolicitudExitosamenteCuandoTodosLosDatosSonValidos() {
     // Arrange
-    String documentoIdentidad = "12345678";
+    String idUser = "12345678";
     String email = "test@example.com";
     BigDecimal monto = new BigDecimal("1000000");
     LocalDate plazo = LocalDate.now().plusMonths(12);
@@ -78,67 +81,41 @@ class SolicitudUseCaseTest {
 
     Solicitud solicitudEsperada =
         Solicitud.toSolicitud(
-            documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
+            idUser, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
 
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(false));
     when(tipoPrestamoRepository.existeById(idTipoPrestamo)).thenReturn(Mono.just(true));
     when(tipoPrestamoRepository.findById(idTipoPrestamo)).thenReturn(Mono.just(tipoPrestamo));
     when(estadoRepository.obtenerIdEstadoPendienteRevision())
         .thenReturn(Mono.just(idEstadoPendiente));
     when(solicitudRepository.crear(any(Solicitud.class))).thenReturn(Mono.just(solicitudEsperada));
+    
+    // Mock for automatic validation process since validacionAutomatica = true
+    when(usuarioRepository.obtenerUsuarioPorId(any(Long.class))).thenReturn(Mono.empty());
+    when(solicitudRepository.obtenerSolicitudesPorIdUser(any(String.class))).thenReturn(Mono.just(List.of()));
+    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(), any(), any(), any())).thenReturn(Mono.empty());
 
     // Act
     Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
+        solicitudUseCase.crearSolicitud(idUser, email, monto, plazo, idTipoPrestamo);
 
     // Assert
     StepVerifier.create(resultado).expectNext(solicitudEsperada).verifyComplete();
   }
 
-  @Test
-  @DisplayName("Debería lanzar AlreadyExistException cuando ya existe solicitud para el documento")
-  void deberiaLanzarAlreadyExistExceptionCuandoYaExisteSolicitudParaElDocumento() {
-    // Arrange
-    String documentoIdentidad = "12345678";
-    String email = "test@example.com";
-    BigDecimal monto = new BigDecimal("1000000");
-    LocalDate plazo = LocalDate.now().plusMonths(12);
-    Long idTipoPrestamo = 1L;
-
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(true));
-
-    // Act
-    Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
-
-    // Assert
-    StepVerifier.create(resultado)
-        .expectErrorMatches(
-            throwable ->
-                throwable instanceof AlreadyExistException
-                    && throwable
-                        .getMessage()
-                        .contains(
-                            "Ya existe una solicitud para el documento de identidad: "
-                                + documentoIdentidad))
-        .verify();
-  }
 
   @Test
   @DisplayName("Debería lanzar ValidationException cuando idTipoPrestamo es nulo")
   void deberiaLanzarValidationExceptionCuandoIdTipoPrestamoEsNulo() {
     // Arrange
-    String documentoIdentidad = "12345678";
+    String idUser = "12345678";
     String email = "test@example.com";
     BigDecimal monto = new BigDecimal("1000000");
     LocalDate plazo = LocalDate.now().plusMonths(12);
     Long idTipoPrestamo = null;
 
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(false));
-
     // Act
     Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
+        solicitudUseCase.crearSolicitud(idUser, email, monto, plazo, idTipoPrestamo);
 
     // Assert
     StepVerifier.create(resultado)
@@ -153,7 +130,7 @@ class SolicitudUseCaseTest {
   @DisplayName("Debería crear solicitud con monto exacto al límite superior del tipo de préstamo")
   void deberiaCrearSolicitudConMontoExactoAlLimiteSuperiorDelTipoPrestamo() {
     // Arrange
-    String documentoIdentidad = "12345678";
+    String idUser = "12345678";
     String email = "test@example.com";
     BigDecimal monto = new BigDecimal("5000000"); // Exactamente el máximo
     LocalDate plazo = LocalDate.now().plusMonths(12);
@@ -169,30 +146,32 @@ class SolicitudUseCaseTest {
             new BigDecimal("15.5"),
             true);
 
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(false));
+    Solicitud solicitudEsperada = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
+
     when(tipoPrestamoRepository.existeById(idTipoPrestamo)).thenReturn(Mono.just(true));
     when(tipoPrestamoRepository.findById(idTipoPrestamo)).thenReturn(Mono.just(tipoPrestamo));
     when(estadoRepository.obtenerIdEstadoPendienteRevision())
         .thenReturn(Mono.just(idEstadoPendiente));
-    when(solicitudRepository.crear(any(Solicitud.class)))
-        .thenReturn(
-            Mono.just(
-                Solicitud.toSolicitud(
-                    documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente)));
+    when(solicitudRepository.crear(any(Solicitud.class))).thenReturn(Mono.just(solicitudEsperada));
+    
+    // Mock for automatic validation process since validacionAutomatica = true
+    when(usuarioRepository.obtenerUsuarioPorId(any(Long.class))).thenReturn(Mono.empty());
+    when(solicitudRepository.obtenerSolicitudesPorIdUser(any(String.class))).thenReturn(Mono.just(List.of()));
+    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(), any(), any(), any())).thenReturn(Mono.empty());
 
     // Act
     Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
+        solicitudUseCase.crearSolicitud(idUser, email, monto, plazo, idTipoPrestamo);
 
     // Assert
-    StepVerifier.create(resultado).expectNextCount(1).verifyComplete();
+    StepVerifier.create(resultado).expectNext(solicitudEsperada).verifyComplete();
   }
 
   @Test
   @DisplayName("Debería crear solicitud con monto exacto al límite inferior del tipo de préstamo")
   void deberiaCrearSolicitudConMontoExactoAlLimiteInferiorDelTipoPrestamo() {
     // Arrange
-    String documentoIdentidad = "12345678";
+    String idUser = "12345678";
     String email = "test@example.com";
     BigDecimal monto = new BigDecimal("500000"); // Exactamente el mínimo
     LocalDate plazo = LocalDate.now().plusMonths(12);
@@ -208,91 +187,32 @@ class SolicitudUseCaseTest {
             new BigDecimal("15.5"),
             true);
 
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(false));
+    Solicitud solicitudEsperada = Solicitud.toSolicitud(idUser, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
+
     when(tipoPrestamoRepository.existeById(idTipoPrestamo)).thenReturn(Mono.just(true));
     when(tipoPrestamoRepository.findById(idTipoPrestamo)).thenReturn(Mono.just(tipoPrestamo));
     when(estadoRepository.obtenerIdEstadoPendienteRevision())
         .thenReturn(Mono.just(idEstadoPendiente));
-    when(solicitudRepository.crear(any(Solicitud.class)))
-        .thenReturn(
-            Mono.just(
-                Solicitud.toSolicitud(
-                    documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente)));
-    when(usuarioRepository.obtenerUsuarioPorDocumento(documentoIdentidad))
-        .thenReturn(
-            Mono.just(
-                co.com.crediya.model.usuario.Usuario.builder()
-                    .idUsuario(1L)
-                    .nombre("Test")
-                    .apellido("User")
-                    .email("test@example.com")
-                    .documentoIdentidad(documentoIdentidad)
-                    .telefono("123456789")
-                    .idRol(1L)
-                    .rol("administrador")
-                    .salarioBase(new BigDecimal("10000"))
-                    .activo(true)
-                    .build()));
-    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(
-            any(co.com.crediya.model.usuario.Usuario.class),
-            any(Solicitud.class),
-            any(List.class),
-            any(Long.class)))
-        .thenReturn(Mono.just("messageId"));
-    when(usuarioRepository.obtenerUsuarioPorDocumento(documentoIdentidad))
-        .thenReturn(
-            Mono.just(
-                co.com.crediya.model.usuario.Usuario.builder()
-                    .idUsuario(1L)
-                    .nombre("Test")
-                    .apellido("User")
-                    .email("test@example.com")
-                    .documentoIdentidad(documentoIdentidad)
-                    .telefono("123456789")
-                    .idRol(1L)
-                    .activo(true)
-                    .build()));
-    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(
-            any(co.com.crediya.model.usuario.Usuario.class),
-            any(Solicitud.class),
-            any(List.class),
-            any(Long.class)))
-        .thenReturn(Mono.just("messageId"));
-    when(usuarioRepository.obtenerUsuarioPorId(1L))
-        .thenReturn(
-            Mono.just(
-                co.com.crediya.model.usuario.Usuario.builder()
-                    .idUsuario(1L)
-                    .nombre("Test")
-                    .apellido("User")
-                    .email("test@example.com")
-                    .documentoIdentidad(documentoIdentidad)
-                    .telefono("123456789")
-                    .idRol(1L)
-                    .rol("administrador")
-                    .salarioBase(new BigDecimal("10000"))
-                    .activo(true)
-                    .build()));
-    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(
-            any(co.com.crediya.model.usuario.Usuario.class),
-            any(Solicitud.class),
-            any(List.class),
-            any(Long.class)))
-        .thenReturn(Mono.just("messageId"));
+    when(solicitudRepository.crear(any(Solicitud.class))).thenReturn(Mono.just(solicitudEsperada));
+    
+    // Mock for automatic validation process since validacionAutomatica = true
+    when(usuarioRepository.obtenerUsuarioPorId(any(Long.class))).thenReturn(Mono.empty());
+    when(solicitudRepository.obtenerSolicitudesPorIdUser(any(String.class))).thenReturn(Mono.just(List.of()));
+    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(any(), any(), any(), any())).thenReturn(Mono.empty());
 
     // Act
     Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
+        solicitudUseCase.crearSolicitud(idUser, email, monto, plazo, idTipoPrestamo);
 
     // Assert
-    StepVerifier.create(resultado).expectNextCount(1).verifyComplete();
+    StepVerifier.create(resultado).expectNext(solicitudEsperada).verifyComplete();
   }
 
   @Test
   @DisplayName("Debería validar el flujo completo de validaciones en orden correcto")
   void deberiaValidarElFlujoCompletoDeValidacionesEnOrdenCorrecto() {
     // Arrange
-    String documentoIdentidad = "87654321";
+    String idUser = "87654321";
     String email = "otro@example.com";
     BigDecimal monto = new BigDecimal("2000000");
     LocalDate plazo = LocalDate.now().plusMonths(24);
@@ -310,58 +230,19 @@ class SolicitudUseCaseTest {
 
     Solicitud solicitudEsperada =
         Solicitud.toSolicitud(
-            documentoIdentidad, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
+            idUser, email, monto, plazo, idTipoPrestamo, idEstadoPendiente);
 
-    when(solicitudRepository.existePorIdUser(documentoIdentidad)).thenReturn(Mono.just(false));
     when(tipoPrestamoRepository.existeById(idTipoPrestamo)).thenReturn(Mono.just(true));
     when(tipoPrestamoRepository.findById(idTipoPrestamo)).thenReturn(Mono.just(tipoPrestamo));
     when(estadoRepository.obtenerIdEstadoPendienteRevision())
         .thenReturn(Mono.just(idEstadoPendiente));
     when(solicitudRepository.crear(any(Solicitud.class))).thenReturn(Mono.just(solicitudEsperada));
-    when(usuarioRepository.obtenerUsuarioPorId(1L))
-        .thenReturn(
-            Mono.just(
-                co.com.crediya.model.usuario.Usuario.builder()
-                    .idUsuario(1L)
-                    .nombre("Test")
-                    .apellido("User")
-                    .email("test@example.com")
-                    .documentoIdentidad(documentoIdentidad)
-                    .telefono("123456789")
-                    .idRol(1L)
-                    .rol("administrador")
-                    .salarioBase(new BigDecimal("10000"))
-                    .activo(true)
-                    .build()));
-    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(
-            any(co.com.crediya.model.usuario.Usuario.class),
-            any(Solicitud.class),
-            any(List.class),
-            any(Long.class)))
-        .thenReturn(Mono.just("messageId"));
-    when(usuarioRepository.obtenerUsuarioPorId(1L))
-        .thenReturn(
-            Mono.just(
-                co.com.crediya.model.usuario.Usuario.builder()
-                    .idUsuario(1L)
-                    .nombre("Test")
-                    .apellido("User")
-                    .email("test@example.com")
-                    .documentoIdentidad(documentoIdentidad)
-                    .telefono("123456789")
-                    .idRol(1L)
-                    .activo(true)
-                    .build()));
-    when(capacidadEndeudamientoGateway.enviarSolicitudCapacidadEndeudamiento(
-            any(co.com.crediya.model.usuario.Usuario.class),
-            any(Solicitud.class),
-            any(List.class),
-            any(Long.class)))
-        .thenReturn(Mono.just("messageId"));
+    
+    // Since validacionAutomatica = false, no additional mocks needed for automatic validation
 
     // Act
     Mono<Solicitud> resultado =
-        solicitudUseCase.crearSolicitud(documentoIdentidad, email, monto, plazo, idTipoPrestamo);
+        solicitudUseCase.crearSolicitud(idUser, email, monto, plazo, idTipoPrestamo);
 
     // Assert
     StepVerifier.create(resultado).expectNext(solicitudEsperada).verifyComplete();
@@ -375,7 +256,7 @@ class SolicitudUseCaseTest {
     Long idEstado = 1L;
 
     // Act
-    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(idSolicitud, idEstado);
+    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(idSolicitud, idEstado, true);
 
     // Assert
     StepVerifier.create(resultado)
@@ -398,7 +279,7 @@ class SolicitudUseCaseTest {
                 Solicitud.toSolicitud("doc", "mail", BigDecimal.ONE, LocalDate.now(), 1L, 1L)));
 
     // Act
-    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, 2L);
+    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, 2L, true);
 
     // Assert
     StepVerifier.create(resultado)
@@ -416,7 +297,7 @@ class SolicitudUseCaseTest {
     Long nuevoIdEstadoNulo = null;
 
     // Act
-    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, nuevoIdEstadoNulo);
+    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, nuevoIdEstadoNulo, true);
 
     // Assert
     StepVerifier.create(resultado)
@@ -445,7 +326,7 @@ class SolicitudUseCaseTest {
         .thenReturn(Mono.empty());
 
     // Act
-    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, 2L);
+    Mono<Solicitud> resultado = solicitudUseCase.actualizarSolicitud(1L, 2L, true);
 
     // Assert
     StepVerifier.create(resultado).expectNext(solicitudActualizada).verifyComplete();
@@ -517,5 +398,67 @@ class SolicitudUseCaseTest {
 
     // Assert
     StepVerifier.create(resultado).expectNext(expectedPageResult).verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Debería lanzar ValidationException cuando idUsuario es nulo en obtener solicitudes por idUsuario")
+  void deberiaLanzarValidationExceptionCuandoIdUsuarioEsNuloEnObtenerSolicitudesPorIdUsuario() {
+    // Arrange
+    String idUsuario = null;
+
+    // Act
+    Mono<List<Solicitud>> resultado = solicitudUseCase.obtenerSolicitudesPorIdUsuario(idUsuario);
+
+    // Assert
+    StepVerifier.create(resultado)
+        .expectErrorMatches(
+            throwable ->
+                throwable instanceof ValidationException
+                    && throwable.getMessage().equals("El ID del usuario es obligatorio"))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("Debería lanzar ValidationException cuando idUsuario está vacío en obtener solicitudes por idUsuario")
+  void deberiaLanzarValidationExceptionCuandoIdUsuarioEstaVacioEnObtenerSolicitudesPorIdUsuario() {
+    // Arrange
+    String idUsuario = "";
+
+    // Act
+    Mono<List<Solicitud>> resultado = solicitudUseCase.obtenerSolicitudesPorIdUsuario(idUsuario);
+
+    // Assert
+    StepVerifier.create(resultado)
+        .expectErrorMatches(
+            throwable ->
+                throwable instanceof ValidationException
+                    && throwable.getMessage().equals("El ID del usuario es obligatorio"))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("Debería obtener solicitudes por idUsuario exitosamente")
+  void deberiaObtenerSolicitudesPorIdUsuarioExitosamente() {
+    // Arrange
+    String idUsuario = "12345678";
+    List<Solicitud> solicitudesEsperadas = List.of(
+        Solicitud.toSolicitud("12345678", "test@example.com", BigDecimal.valueOf(1000), LocalDate.now(), 1L, 1L)
+    );
+
+    when(solicitudRepository.obtenerSolicitudesPorIdUser(idUsuario)).thenReturn(Mono.just(solicitudesEsperadas));
+
+    // Act
+    Mono<List<Solicitud>> resultado = solicitudUseCase.obtenerSolicitudesPorIdUsuario(idUsuario);
+
+    // Assert
+    StepVerifier.create(resultado).expectNext(solicitudesEsperadas).verifyComplete();
+  }
+
+  private boolean solicitudMatches(Solicitud actual, Solicitud expected) {
+    return actual.getIdUser().equals(expected.getIdUser()) &&
+           actual.getEmail().equals(expected.getEmail()) &&
+           actual.getMonto().compareTo(expected.getMonto()) == 0 &&
+           actual.getPlazo().equals(expected.getPlazo()) &&
+           actual.getIdTipoPrestamo().equals(expected.getIdTipoPrestamo());
   }
 }

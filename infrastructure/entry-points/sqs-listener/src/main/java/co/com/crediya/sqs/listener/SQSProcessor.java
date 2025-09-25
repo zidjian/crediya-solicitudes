@@ -22,12 +22,12 @@ public class SQSProcessor implements Function<Message, Mono<Void>> {
 
   @Override
   public Mono<Void> apply(Message message) {
-    log.info("Received SQS message from capacidad-endeudamiento: {}", message.body());
+    log.info("Mensaje SQS recibido desde capacidad-endeudamiento: {}", message.body());
     return parseMessage(message.body())
         .flatMap(this::processCapacidadResponse)
         .onErrorResume(
             e -> {
-              log.error("Error processing capacidad-endeudamiento message: {}", e.getMessage(), e);
+              log.error("Error procesando mensaje de capacidad-endeudamiento: {}", e.getMessage(), e);
               return Mono.empty();
             });
   }
@@ -39,20 +39,17 @@ public class SQSProcessor implements Function<Message, Mono<Void>> {
           Long idSolicitud =
               jsonNode.has("idSolicitud") ? jsonNode.get("idSolicitud").asLong() : null;
           String estado = null;
-          if (jsonNode.has("estado")) {
-              estado = jsonNode.get("estado").asText();
-          } else if (jsonNode.has("status")) {
+          if (jsonNode.has("status")) {
               estado = jsonNode.get("status").asText();
-              log.warn("Campo 'estado' no encontrado, usando 'status': {}", estado);
           }
           String planPago = jsonNode.has("planPago") ? jsonNode.get("planPago").asText() : null;
           log.debug(
-              "Parsed message - idSolicitud: {}, estado: {}, planPago: {}",
+              "Mensaje parseado - idSolicitud: {}, estado: {}, planPago: {}",
               idSolicitud,
               estado,
               planPago);
           if (estado == null || estado.isBlank()) {
-              log.error("Estado is null or blank in raw message: {}", body);
+              log.error("El estado es nulo o vacío en el mensaje original: {}", body);
           }
           return new CapacidadResponse(idSolicitud, estado);
         });
@@ -60,47 +57,47 @@ public class SQSProcessor implements Function<Message, Mono<Void>> {
 
   private Mono<Void> processCapacidadResponse(CapacidadResponse response) {
       if (response == null || response.idSolicitud() == null) {
-          log.warn("CapacidadResponse or idSolicitud is null: {}", response);
+          log.warn("CapacidadResponse o idSolicitud es nulo: {}", response);
           return Mono.empty();
       }
 
       String rawEstado = response.estado();
       if (rawEstado == null || rawEstado.isBlank()) {
-          log.error("Estado is null or blank for solicitud {}. Raw response: {}", response.idSolicitud(), response);
+          log.error("El estado es nulo o vacío para la solicitud {}. Respuesta original: {}", response.idSolicitud(), response);
           return Mono.empty();
       }
 
       String normalized = rawEstado.trim();
-      log.info("Updating solicitud {} to estado {}", response.idSolicitud(), normalized);
+      log.info("Actualizando solicitud {} al estado {}", response.idSolicitud(), normalized);
 
 
     return estadoRepository
         .findByNombre(response.estado())
-        .switchIfEmpty(Mono.error(new RuntimeException("Estado not found: " + response.estado())))
+        .switchIfEmpty(Mono.error(new RuntimeException("Estado no encontrado: " + response.estado())))
         .flatMap(
             estado -> {
-              log.info("Found estado {} with id {}", estado.getNombre(), estado.getIdEstado());
+              log.info("Estado encontrado {} con id {}", estado.getNombre(), estado.getIdEstado());
               return solicitudUseCase.actualizarSolicitud(
-                  response.idSolicitud(), estado.getIdEstado());
+                  response.idSolicitud(), estado.getIdEstado(), false);
             })
         .doOnSuccess(
             solicitud -> {
               log.info(
-                  "Successfully updated solicitud {} to estado: {}",
+                  "Solicitud {} actualizada exitosamente al estado: {}",
                   response.idSolicitud(),
                   response.estado());
               if ("APROBADO".equalsIgnoreCase(response.estado())) {
-                log.info("Solicitud {} has been APPROVED", response.idSolicitud());
+                log.info("La solicitud {} ha sido APROBADA", response.idSolicitud());
               } else if ("RECHAZADO".equalsIgnoreCase(response.estado())) {
-                log.info("Solicitud {} has been REJECTED", response.idSolicitud());
+                log.info("La solicitud {} ha sido RECHAZADA", response.idSolicitud());
               } else if ("PENDIENTE_REVISION".equalsIgnoreCase(response.estado())) {
-                log.info("Solicitud {} is PENDING REVIEW", response.idSolicitud());
+                log.info("La solicitud {} está PENDIENTE DE REVISIÓN", response.idSolicitud());
               }
             })
         .doOnError(
             e ->
                 log.error(
-                    "Failed to update solicitud {}: {}", response.idSolicitud(), e.getMessage()))
+                    "Error al actualizar la solicitud {}: {}", response.idSolicitud(), e.getMessage()))
         .then();
   }
 

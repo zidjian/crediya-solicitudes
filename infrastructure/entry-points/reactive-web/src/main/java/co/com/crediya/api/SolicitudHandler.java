@@ -227,7 +227,7 @@ public class SolicitudHandler {
                     idSolicitud,
                     idEstado);
 
-                return solicitudUseCase.actualizarSolicitud(idSolicitud, idEstado);
+                return solicitudUseCase.actualizarSolicitud(idSolicitud, idEstado, true);
               } catch (NumberFormatException e) {
                 log.warn("[ACTUALIZAR_SOLICITUD] Error de formato en IDs: {}", e.getMessage());
                 return Mono.error(new ValidationException("Los IDs deben ser números válidos"));
