@@ -4,6 +4,7 @@ import co.com.crediya.model.common.PageResult;
 import co.com.crediya.model.solicitud.Solicitud;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface SolicitudRepository {
@@ -20,4 +21,8 @@ public interface SolicitudRepository {
   Mono<Solicitud> findById(Long idSolicitud);
 
   Mono<Boolean> existeById(Long idSolicitud);
+  
+  Mono<Long> contarSolicitudesAprobadas();
+  
+  Mono<BigDecimal> sumarMontoSolicitudesAprobadas();
 }

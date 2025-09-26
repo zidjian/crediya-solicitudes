@@ -5,6 +5,7 @@ import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.gateways.CapacidadEndeudamientoGateway;
 import co.com.crediya.model.solicitud.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.gateways.NotificationGateway;
+import co.com.crediya.model.solicitud.gateways.ReportsGateway;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.TipoPrestamoRepository;
 import co.com.crediya.model.usuario.Usuario;
@@ -25,6 +26,7 @@ public class SolicitudUseCase {
   private final NotificationGateway notificationGateway;
   private final CapacidadEndeudamientoGateway capacidadEndeudamientoGateway;
   private final UsuarioRepository usuarioRepository;
+  private final ReportsGateway reportsGateway;
 
   public Mono<Solicitud> crearSolicitud(
       String idUser, String email, BigDecimal monto, LocalDate plazo, Long idTipoPrestamo) {
@@ -72,8 +74,9 @@ public class SolicitudUseCase {
                                 .flatMap(solicitudRepository::actualizar)
                                 .flatMap(
                                     solicitudActualizada -> {
+                                      Mono<Solicitud> notificationMono;
                                       if (Boolean.TRUE.equals(send)) {
-                                        return estadoRepository
+                                        notificationMono = estadoRepository
                                             .findById(validatedIdEstado)
                                             .flatMap(
                                                 estado ->
@@ -84,8 +87,13 @@ public class SolicitudUseCase {
                                                             solicitudActualizada.getIdSolicitud()))
                                             .then(Mono.just(solicitudActualizada));
                                       } else {
-                                        return Mono.just(solicitudActualizada);
+                                        notificationMono = Mono.just(solicitudActualizada);
                                       }
+                                      
+                                      // Enviar reporte de solicitudes aprobadas después de actualizar
+                                      return notificationMono
+                                          .flatMap(solicitud -> enviarReporteSolicitudesAprobadas()
+                                              .then(Mono.just(solicitud)));
                                     })));
   }
 
@@ -201,5 +209,21 @@ public class SolicitudUseCase {
               }
             })
         .defaultIfEmpty(solicitud);
+  }
+
+  private Mono<Void> enviarReporteSolicitudesAprobadas() {
+    return Mono.zip(
+            solicitudRepository.contarSolicitudesAprobadas(),
+            solicitudRepository.sumarMontoSolicitudesAprobadas())
+        .flatMap(tuple -> {
+          Long totalSolicitudesAprobadas = tuple.getT1();
+          BigDecimal montoTotalAprobado = tuple.getT2();
+          return reportsGateway.enviarReporteSolicitudesAprobadas(totalSolicitudesAprobadas, montoTotalAprobado);
+        })
+        .then()
+        .onErrorResume(error -> {
+          // Log error but don't fail the main operation
+          return Mono.empty();
+        });
   }
 }

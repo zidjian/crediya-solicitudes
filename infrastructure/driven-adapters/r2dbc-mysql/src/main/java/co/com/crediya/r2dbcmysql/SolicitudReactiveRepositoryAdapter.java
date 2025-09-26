@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
@@ -133,5 +134,23 @@ public class SolicitudReactiveRepositoryAdapter
     return super.repository
         .existsById(idSolicitud)
         .doOnSuccess(existe -> log.debug("[SOLICITUD_ADAPTER] Solicitud existe: {}", existe));
+  }
+
+  @Override
+  public Mono<Long> contarSolicitudesAprobadas() {
+    log.debug("[SOLICITUD_ADAPTER] Contando solicitudes aprobadas");
+    return super.repository
+        .countByEstadoAprobado()
+        .doOnSuccess(count -> log.debug("[SOLICITUD_ADAPTER] Solicitudes aprobadas encontradas: {}", count))
+        .doOnError(error -> log.error("[SOLICITUD_ADAPTER] Error contando solicitudes aprobadas: {}", error.getMessage()));
+  }
+
+  @Override
+  public Mono<BigDecimal> sumarMontoSolicitudesAprobadas() {
+    log.debug("[SOLICITUD_ADAPTER] Sumando monto de solicitudes aprobadas");
+    return super.repository
+        .sumMontoByEstadoAprobado()
+        .doOnSuccess(suma -> log.debug("[SOLICITUD_ADAPTER] Monto total de solicitudes aprobadas: {}", suma))
+        .doOnError(error -> log.error("[SOLICITUD_ADAPTER] Error sumando monto de solicitudes aprobadas: {}", error.getMessage()));
   }
 }
